@@ -77,8 +77,8 @@ class Catalog(object):
             for obj in lines:
                 of.write ("object {ID} {RA} {DEC} {MAG_NORM} {SED_NAME} "
                           "{REDSHIFT} {GAMMA1} {GAMMA2} {KAPPA} {DELTA_RA} "
-                          "{DELTA_DEC} {OBJTYPE} ".format(ID=oc, RA=float(obj["ra"]*u.deg/u.rad),
-                          DEC=float(obj["dec"]*u.deg/u.rad), MAG_NORM=obj["rmag"], SED_NAME=sedName,
+                          "{DELTA_DEC} {OBJTYPE} ".format(ID=oc, RA=float(obj["ra"]*u.rad/u.deg),
+                          DEC=float(obj["dec"]*u.rad/u.deg), MAG_NORM=obj["rmag"], SED_NAME=sedName,
                           REDSHIFT=obj["z"], GAMMA1=obj["g1"], GAMMA2=obj["g2"], KAPPA=0.0,
                                                 DELTA_RA=0.0, DELTA_DEC=0.0, OBJTYPE=objtype))
 
