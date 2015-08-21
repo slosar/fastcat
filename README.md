@@ -18,6 +18,27 @@ a given limit
 in the same way you would from a probability distribution. Need to use much more agressive
 smoothing otherwise it gets too concentrated
 
+## Usage
+
+It is all very easy, see example in test/test.py
+
+The basic procedure is the following:
+
+* Set up generator object. This will use randomfields to generate delta field
+
+* Use genSimple to generate catalog
+
+* Catalog is is of fastcat.Catalog object as written out in fastcat/catalog.py. 
+  It holds a structured array which you can access directly.
+  Eg. cat["ra"] will give you 1D array of ra coordinas. Valid names are:
+
+  * "ra", "dec": float, ra,dec coordinates in radians
+  * "z": float, redshift
+  * "r": float, distance in Mpc/h
+  * "rmag": float, rmagnitude
+  * "e1","e2" : float, intrinsic ellipticity
+  * "g1","g2" : float, shears
+
 ## TODO
 
 * Shears not yet implemented.
