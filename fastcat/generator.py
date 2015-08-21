@@ -28,7 +28,7 @@ class ZDist(object):
         return np.random.normal(self.zmean,self.deltaz)
 
 class EllipticityDist(object):
-    """ Characterises the redshift distribution with a Gaussian. """
+    """ Characterises the ellipticity distribution with a Gaussian. """
     def __init__ (self, abs_ellipticity_sigma=0.3):
         self.eonesigma=abs_ellipticity_sigma**2/2 ## divide by two per component
         
@@ -37,7 +37,7 @@ class EllipticityDist(object):
 
 
 class MagDist(object):
-    """ Characterises the redshift distribution with a Gaussian. """
+    """ Characterises the magnitude distribution with a Gaussian. """
     def __init__ (self, rmag=19, deltarmag=2):
         self.rmagmean=19
         self.deltarmag=deltarmag
@@ -52,6 +52,34 @@ class MagDist(object):
 class Generator(object):
     def __init__ (self,zmax=2.5, size=2.0*u.deg, grid_spacing_h_Mpc=1.0, smoothing_length_Mpc_h=2.0,
                   seed=123,boxpad=1.2,cosmology=None, power=None):
+        """"
+        Generator object for fastcat catalogs.
+
+        In this constructor we will use randomfields to generate the delta field
+        that is big enough so that our FoV fits in. We work in flat-sky approx.
+        Once generator object is set, use getSimple to actually get catalogs.
+
+        Parameters
+        ----------
+        zmax : float
+               Max redshift to which we plan to go
+        size : astropy units quantity
+               size of field of view
+        grid_spacing_h_Mpc : float, optional
+               passed to randomfields
+        smoothing_length : float, optional
+               passed to randomfields
+        seed: int, optional
+               Random number seed to use, passed to randomfields
+        boxpad : float, optional
+               Expand box by this much to avoid periodicity issues
+        cosmology: astropy.cosmology.FLRW, optional
+               Passed to randomfields
+        power: numpy.ndarray, optional
+               Power spectrum to use, passed to randomfields
+        """
+
+
         if cosmology is None:
             self.cosmology = ct.create_cosmology()
             if power is None:
