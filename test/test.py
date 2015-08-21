@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import sys
-
+sys.path=["../fastcat"]+sys.path
 import fastcat
 import randomfield as rf
 # initialize generator

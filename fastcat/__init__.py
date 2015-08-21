@@ -5,7 +5,9 @@ Fast generation of crappy catalogs.
 """
 
 from catalog import Catalog
-from generator import Generator
+from generator import Generator,ZDist, EllipticityDist, MagDist
+
+
 
 
 

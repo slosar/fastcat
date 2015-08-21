@@ -248,5 +248,3 @@ class Generator(object):
         
         return toret
 
-    
-
