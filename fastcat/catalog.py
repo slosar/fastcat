@@ -4,6 +4,10 @@ import numpy as np
 import galsim
 from galsim.shear import Shear
 import astropy.units as u
+try:
+    import h5py
+except:
+    print ("Cannot import h5py, if you try to write to h5 it won't work")
 
 class Catalog(object):
     """ 
@@ -33,6 +37,30 @@ class Catalog(object):
 
     def __setitem__(self, key,item):
         self.data[key]=item
+
+    def readH5(self, fname):
+        """ 
+        Reads Catalog from H5 file, specified as argument
+        """
+        of=h5py.File(fname, "r")
+        dset=of["data"]
+        self.data=of["data"].value
+        if 'meta' in dset.attrs:
+            self.meta=dset.attrs['meta']
+        print("Read %i entries from %s"%(len(self.data),fname))
+
+    def dumpH5(self, fname):
+        """ 
+        Write Catalog to H5 file, specified as argument
+        """
+        of=h5py.File(fname, "w")
+        if (self.meta):
+            of.create_dataset("meta")
+        N=len(self.data)
+        dset=of.create_dataset("data", data=self.data)
+        if self.meta:
+            dset.attrs['meta']=self.meta
+        
 
     def dumpPhoSim(self, fname, header="", manyFiles=False, sedName="../sky/sed_flat.txt", 
                    objtype="sersic2D", ssize=2.0*u.arcsec):

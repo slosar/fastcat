@@ -39,6 +39,12 @@ parser.add_option("--phosim_many", dest="ps_many", default=False,
                   action="store_true", help="If true, create per obj file")
 parser.add_option("--phosim_size", dest="ps_size", default=2.0,
                   help="Size in arcsec of sersic gals", metavar="value", type="float")
+parser.add_option("--h5read", dest="h5read", default=None,
+                  help="Instead of creating dataset, read it from H5", 
+                  metavar="value", type="string")
+parser.add_option("--h5write", dest="h5write", default=None,
+                  help="Write to hdf5 file specified on command line", 
+                  metavar="value", type="string")
 
 (o, args) = parser.parse_args()
 if (o.fast):
@@ -47,10 +53,14 @@ if (o.fast):
     o.algo="lognormal"
     o.N=10
 
-maxz=o.zmean+o.deltaz*5
-gen=fastcat.Generator(zmax=maxz,size=o.fov*u.deg,grid_spacing_h_Mpc=o.gspace, 
-                      smoothing_length_Mpc_h=o.smooth,seed=o.seed)
-cat=gen.genSimple(N=o.N,bias=o.bias,zdist=fastcat.ZDist(o.zmean,o.deltaz),
+if (o.h5read):
+    cat=fastcat.Catalog(0)
+    cat.readH5(o.h5read)
+else:
+    maxz=o.zmean+o.deltaz*5
+    gen=fastcat.Generator(zmax=maxz,size=o.fov*u.deg,grid_spacing_h_Mpc=o.gspace, 
+                          smoothing_length_Mpc_h=o.smooth,seed=o.seed)
+    cat=gen.genSimple(N=o.N,bias=o.bias,zdist=fastcat.ZDist(o.zmean,o.deltaz),
                 edist=fastcat.EllipticityDist(o.iesig),algorithm=o.algo)
 
 if o.phosim:
@@ -60,3 +70,6 @@ if o.phosim:
         header=""
     cat.dumpPhoSim(o.phosim, header=header, manyFiles=o.ps_many, sedName="../sky/sed_flat.txt", 
                    objtype="sersic2D", ssize=o.ps_size*u.arcsec)
+if o.h5write:
+    cat.dumpH5(o.h5write)
+
