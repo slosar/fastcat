@@ -20,7 +20,39 @@ smoothing otherwise it gets too concentrated
 
 ## Usage
 
-It is all very easy, see example in test/test.py
+The basic driver is in test/driver.py.
+
+Running with help will tell you things:
+
+```
+> test/driver.py --help
+Usage: driver.py [options]
+
+Options:
+  -h, --help            show this help message and exit
+  --fov=value           Field of view (degrees)
+  --fast                Settings very fast options for quick test, sets N=10
+  -N value              Number of objects to create
+  --grid_spacing=value  Grid Spacing
+  --smooth=value        Smoothing in Mpc/h
+  --bias=value          bias of tracer
+  --zmean=value         Mean redhisft
+  --deltaz=value        variance in redshift
+  --iesig=value         intrinsic ellipiticy sigma
+  --seed=value          Smoothing in Mpc/h
+  --algo=value          Algorithm to use: peaks, lognormal, random
+  --phosim=value        Set to make a phosim file
+  --phosim_header=value
+                        Where to read phosim header from. Empty for no header
+  --phosim_many         If true, create per obj file
+  --phosim_size=value   Size in arcsec of sersic gals
+  --h5read=value        Instead of creating dataset, read it from H5
+  --h5write=value       Write to hdf5 file specified on command line
+```
+
+For more information, best look at https://github.com/DarkEnergyScienceCollaboration/BremertonRoundTrip/
+
+For direct usage, it is all very easy, see example in test/test.py
 
 The basic procedure is the following:
 
