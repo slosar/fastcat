@@ -30,7 +30,7 @@ class ZDist(object):
 class EllipticityDist(object):
     """ Characterises the ellipticity distribution with a Gaussian. """
     def __init__ (self, abs_ellipticity_sigma=0.3):
-        self.eonesigma=abs_ellipticity_sigma**2/2 ## divide by two per component
+        self.eonesigma=abs_ellipticity_sigma/sqrt(2.0) ## divide by two per component
         
     def sampleEOne(self):
         return np.random.normal(0.0,self.eonesigma)
