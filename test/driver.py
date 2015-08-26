@@ -4,6 +4,7 @@ sys.path=["../fastcat"]+sys.path
 import fastcat
 import astropy.units as u
 from optparse import OptionParser
+import math
 
 parser = OptionParser()
 parser.add_option("--fov", dest="fov", default=3.0,
@@ -26,7 +27,7 @@ parser.add_option("--iesig", dest="iesig", default=0.3,
                   help="intrinsic ellipiticy sigma", metavar="value", type="float")
 parser.add_option("--seed", dest="seed", default=123,
                   help="Smoothing in Mpc/h", metavar="value", type="int")
-parser.add_option("--algo", dest="alg", default=None,
+parser.add_option("--algo", dest="algo", default="peaks",
                   help="Algorithm to use: peaks, lognormal, random", 
                   metavar="value", type="string")
 parser.add_option("--phosim", dest="phosim", default=None,
@@ -45,6 +46,9 @@ parser.add_option("--h5read", dest="h5read", default=None,
 parser.add_option("--h5write", dest="h5write", default=None,
                   help="Write to hdf5 file specified on command line", 
                   metavar="value", type="string")
+parser.add_option("--treecorr", dest="treecorr", default=None,
+                  help="Set to use TreeCorr to calculate corr functions. "
+                  " Output to filename specified")
 
 (o, args) = parser.parse_args()
 if (o.fast):
@@ -62,6 +66,25 @@ else:
                           smoothing_length_Mpc_h=o.smooth,seed=o.seed)
     cat=gen.genSimple(N=o.N,bias=o.bias,zdist=fastcat.ZDist(o.zmean,o.deltaz),
                 edist=fastcat.EllipticityDist(o.iesig),algorithm=o.algo)
+
+
+if (o.treecorr):
+    ## first need to generate random catalog
+    catr=gen.genSimple(N=2*o.N,bias=o.bias,zdist=fastcat.ZDist(o.zmean,o.deltaz),
+                       edist=fastcat.EllipticityDist(o.iesig),algorithm="random")
+    ## now calculate 
+    tcd=fastcat.TCDriver(cat,catr)
+    logr, meanlogr, xinn, xivarnn = tcd.NNCorrelation()
+    logr, meanlogr, xip, xim, xivargg = tcd.GGCorrelation()
+    logr, meanlogr, xing, xingi, xivarng = tcd.NGCorrelation()
+    of=open(o.treecorr,'w')
+    of.write('# logr_nominal logr xi_dd xi_gg+ xi_gg- xi_dg xi_dg_imag  (each xi is value error)\n')
+    for  a,b,m1,e1, m2,m3,e23, m4, m5, e45 in zip(logr, meanlogr, xinn, xivarnn,
+                                                  xip, xim, xivargg, xing, xingi, xivarng):
+        of.write("%g %g %g %g %g %g %g %g %g %g %g %g \n "%(math.exp(a),math.exp(b),m1,e1,
+                                                            m2,e23,m3,e23,m4,e45,m5,e45))
+    of.close()
+
 
 if o.phosim:
     if o.ps_header:

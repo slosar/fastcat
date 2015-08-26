@@ -14,6 +14,7 @@ class Catalog(object):
     Basic object to hold a catalog of observed astronomical objects.
     Intentially very simple for the time being.
 
+
     It holds a structured array which you can access directly.
     Eg. cat["ra"] will give you 1D array of ra coordinas. Valid names are:
     
@@ -24,13 +25,24 @@ class Catalog(object):
     * "e1","e2" : float, intrinsic ellipticity
     * "g1","g2" : float, shears
     It also has a placeholder for meta-data, which is empty at the moment
+
+    On construction:
+    Options
+    -------
+    N: int
+       number of objects in the catalog
+    max_sep : float
+       maximum sepration between objects in degrees, i.e. twice size of FOV
+    meta: string
+       string containing meta info
    """
     
-    def __init__ (self, N,meta=None):
+    def __init__ (self, N, max_sep, meta=None):
         self.data=np.zeros(N,dtype=[('ra',float),('dec',float),('z',float),('r',float),
                                      ('rmag',float), ('e1',float), ('e2',float),
                                      ('g1',float),('g2',float)])
         self.meta=meta
+        self.max_sep=max_sep
 
     def __getitem__(self, key):
         return self.data[key]
@@ -47,6 +59,7 @@ class Catalog(object):
         self.data=of["data"].value
         if 'meta' in dset.attrs:
             self.meta=dset.attrs['meta']
+        self.max_sep=dset.attrs['max_sep']
         print("Read %i entries from %s"%(len(self.data),fname))
 
     def dumpH5(self, fname):
@@ -60,7 +73,7 @@ class Catalog(object):
         dset=of.create_dataset("data", data=self.data)
         if self.meta:
             dset.attrs['meta']=self.meta
-        
+        dset.attrs['max_sep']=self.max_sep
 
     def dumpPhoSim(self, fname, header="", manyFiles=False, sedName="../sky/sed_flat.txt", 
                    objtype="sersic2D", ssize=2.0*u.arcsec):

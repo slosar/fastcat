@@ -94,6 +94,7 @@ class Generator(object):
         ## first work out how big a box do we need
         dmax=self.cosmology.comoving_distance(zmax)*self.cosmology.h/u.Mpc
         self.Nz=int(dmax/grid_spacing_h_Mpc*boxpad)+1
+        self.max_sep=float(size/u.deg)
         self.thetao2=(size/u.rad)/2.0
         self.Nx=int(dmax*self.thetao2*2/grid_spacing_h_Mpc*boxpad)+1
 
@@ -112,8 +113,10 @@ class Generator(object):
         self.gen=rf.Generator(self.Nx, self.Ny, self.Nz, grid_spacing_Mpc_h=grid_spacing_h_Mpc,
                                        cosmology=cosmology, power=power, verbose=True)
 
+        print ("Calling generate delta field...")
         self.delta=self.gen.generate_delta_field(
             smoothing_length_Mpc_h=smoothing_length_Mpc_h, seed=seed)
+        print ("Done.")
         self.var=self.delta.var()
         self.zs=ct.get_redshifts(self.cosmology, self.delta,grid_spacing_h_Mpc)
         ## get interpolator from index to z
@@ -235,7 +238,7 @@ class Generator(object):
                     break
 
         print ("Proposal accept rate:",float(N)/tcc)
-        toret=cat.Catalog(N)
+        toret=cat.Catalog(N,max_sep=self.max_sep)
         toret["ra"]=np.array(ralist)
         toret["dec"]=np.array(dlist)
         toret["z"]=np.array(zlist)

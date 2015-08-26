@@ -6,7 +6,7 @@ Fast generation of crappy catalogs.
 
 from catalog import Catalog
 from generator import Generator,ZDist, EllipticityDist, MagDist
-
+from tcdriver import TCDriver
 
 
 
