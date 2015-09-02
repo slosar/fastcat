@@ -26,6 +26,42 @@ class TCDriver(object):
         self.bin_size=math.log(self.max_sep/self.min_sep)/Nbins
 
 
+
+    def NN3DCorrelation(self, min_sep=1, max_sep=200, bin_size=0.5):
+        """
+        Caclulates 3D correlation function of objects using Catalog's ra, dec, r
+        Requires randcatalog to exist. Distance units are Mpc/h.
+
+        Returns tuple (logr, meanlogr, xi, xivar)
+        
+        """
+        catS = treecorr.Catalog(ra=self.catalog["ra"], dec=self.catalog["dec"], 
+                                r=self.catalog["r"],
+                                ra_units="radians", dec_units="radians")
+        if (self.randcatalog):
+            catR = treecorr.Catalog(ra=self.randcatalog["ra"], 
+                                    dec=self.randcatalog["dec"], 
+                                    r=self.randcatalog["r"], ra_units="radians", 
+                                    dec_units="radians")
+        else:
+            print ("Need random catalog for NN")
+            stop()
+        dd=treecorr.NNCorrelation(min_sep=min_sep, bin_size=bin_size, 
+                                  max_sep=max_sep)
+        dr=treecorr.NNCorrelation(min_sep=min_sep, bin_size=bin_size, 
+                                  max_sep=max_sep)
+        rr=treecorr.NNCorrelation(min_sep=min_sep, bin_size=bin_size, 
+                                  max_sep=max_sep)
+            
+        dd.process(catS)
+        dr.process(catS, catR)
+        rr.process(catR)
+        xi, xivar=dd.calculateXi(rr,dr)
+        logr = dd.logr 
+        meanlogr= dd.meanlogr
+        return (logr, meanlogr, xi, xivar)
+
+
     def NNCorrelation(self):
         """
         Caclulates 2D correlation function using Catalog's ra, dec.

@@ -118,7 +118,7 @@ class Generator(object):
             smoothing_length_Mpc_h=smoothing_length_Mpc_h, seed=seed)
         print ("Done.")
         self.var=self.delta.var()
-        self.zs=ct.get_redshifts(self.cosmology, self.delta,grid_spacing_h_Mpc)
+        self.zs=ct.get_redshifts(self.cosmology,self.delta, grid_spacing_h_Mpc)
         ## get interpolator from index to z
         self.k2z=interp1d(range(self.Nz),self.zs[0,0,:])
         self.z2k=interp1d(self.zs[0,0,:],range(self.Nz))
@@ -242,7 +242,7 @@ class Generator(object):
         toret["ra"]=np.array(ralist)
         toret["dec"]=np.array(dlist)
         toret["z"]=np.array(zlist)
-        toret["r"]=np.array(rlist)*self.grid_spacing_h_Mpc
+        toret["r"]=np.array(rlist)
         toret["rmag"]=np.array([rmagdist.sampleRMag(bias) for i in xrange(N)])
         toret["e1"]=np.array([edist.sampleEOne() for i in xrange(N)])
         toret["e2"]=np.array([edist.sampleEOne() for i in xrange(N)])
