@@ -9,6 +9,15 @@ also produce random ellipticities and should be able to use random
 field to create shears at the correct positions. 
 For the time being, rmags are drawn from a Gaussian distribution.
 
+Update:
+
+This package is now very much in flux. We will transition to a modular
+backend that will be either CoLoRe or randomfield, depending on the
+usage. For the time being, it is a bit of a mess -- will clean things
+up later as we go along.
+
+
+
 ## Algorithms
 
 * Peaks: take delta at a field, perturb it with a Gaussian and pick it if it is above
