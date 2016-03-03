@@ -48,7 +48,8 @@ def execCoLoRe(i,o):
             cores=o.nodes*12, cpath=o.cpath, dr=dr)
         print exe
         os.system(exe)
-
+    else:
+        print "Unknown exe"
 
 def writeCInis(direct,i,o):
     zmin=0.05
