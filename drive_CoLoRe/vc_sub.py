@@ -55,7 +55,7 @@ def writeCInis(direct,i,o):
     zmin=0.05
     zmax=1.1
     open (direct+"/params.ini",'w').write("""
-prefix_out= {direct}/out{seed}
+prefix_out= {direct}/out
 output_format= HDF5
 pk_filename= {cpath}/test_files/Pk_CAMB_test.dat
 nz_filename= {opath}/Nz.txt
