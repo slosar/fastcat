@@ -42,7 +42,9 @@ def execCoLoRe(i,o):
         pass
     writeCInis (dr,i,o)
     if o.stype=="exec":
-        os.system (o.cpath+"/CoLoRe "+dr+"/params.ini")
+        exe=o.cpath+"/CoLoRe "+dr+"/params.ini"
+        print exe
+        os.system (exe)
     elif o.stype=="bnl":
         exe='wq sub -r "N:{cores}; threads:12; hostfile:auto; group:[new,new2]; job_name:CoLoRe" -c "OMP_NUM_THREADS=%threads% mpirun -hostfile %hostfile% {cpath}./CoLoRe {dr}/params.ini" '.format(
             cores=o.nodes*12, cpath=o.cpath, dr=dr)
