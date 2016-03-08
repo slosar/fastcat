@@ -36,7 +36,7 @@ class Catalog(object):
     
     def __init__ (self, N, fields=['ra','dec','z'],dNdz=None, bz=None,window=None,
                   photoz=None,meta=None):
-        self.data=np.zeros(N,dtype=map(lambda x:(x,float),fields))
+        self.data=np.zeros(N,dtype=map(lambda x:(x,np.float32),fields))
         self.dNdz=dNdz
         self.bz=bz
         self.window=window
