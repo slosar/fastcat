@@ -5,7 +5,7 @@ sys.path=["fastcat"]+sys.path
 import catalog as cat
 import numpy as np 
 from optparse import OptionParser
-from astropy.coordinates import SkyCoord
+import astropy.coordinates as ac
 import datetime
 
 version='0.1'
@@ -39,7 +39,17 @@ for i in range(o.Nr):
         stop()
     gals=gals[(gals['DEC']>o.decmin) & (gals['DEC']<o.decmax)]
     print len(gals)," after dec cut"
-    galb=np.array(SkyCoord(gals['RA'], gals['DEC'], frame='icrs', unit='deg').galactic.b)
+    if hasattr(ac,"SkyCoord"):
+        galb=np.array(ac.SkyCoord(ra=gals['RA'], dec=gals['DEC'], frame='icrs', unit='deg').galactic.b)
+    else:
+        print "You have an old astropy! This will be slow!!"
+        #old school
+        cra=gals["RA"]
+        cdec=gals["DEC"]
+        galb=np.zeros(len(gals))
+        for i in xrange(len(gals)):
+            galb[i]=ac.ICRSCoordinates(ra=cra[i], dec=cdec[i], unit=('deg','deg')).galactic.b.degrees
+
     gals=gals[abs(galb)>o.bcut]
     print len(gals)," after b cut"
     N=len(gals)

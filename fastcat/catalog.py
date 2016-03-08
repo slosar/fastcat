@@ -1,8 +1,6 @@
 from __future__ import print_function, division
 
 import numpy as np
-import galsim
-from galsim.shear import Shear
 import astropy.units as u
 try:
     import h5py
