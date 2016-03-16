@@ -11,6 +11,7 @@ from scipy.interpolate import interp1d
 from scipy.optimize import brentq
 from numpy import sqrt, exp
 
+print ("RANDOMFIELD GENERATOR IS BROKEN, DO NOT USE OR RISK MICE EATING CHEESE")
 
 class ZDist(object):
     """ Characterises the redshift distribution with a Gaussian. """
