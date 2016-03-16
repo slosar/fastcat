@@ -1,7 +1,11 @@
 from __future__ import print_function, division
 
+import window
+import photoz
 import numpy as np
 import astropy.units as u
+from numpy.lib import recfunctions
+
 try:
     import h5py
 except:
@@ -31,15 +35,19 @@ class Catalog(object):
     meta: string
        string containing meta info
    """
+    version=0.2
     
-    def __init__ (self, N, fields=['ra','dec','z'],dNdz=None, bz=None,window=None,
-                  photoz=None,meta=None):
-        self.data=np.zeros(N,dtype=map(lambda x:(x,np.float32),fields))
-        self.dNdz=dNdz
-        self.bz=bz
-        self.window=window
-        self.photoz=photoz
-        self.meta=meta
+    def __init__ (self, N=0, fields=['ra','dec','z'],dNdz=None, bz=None,window=window.WindowBase(),
+                  photoz=None,meta=None, read_from=None):
+        if (read_from!=None):
+            self.readH5(read_from)
+        else:
+            self.data=np.zeros(N,dtype=map(lambda x:(x,np.float32),fields))
+            self.dNdz=dNdz
+            self.bz=bz
+            self.window=window
+            self.photoz=photoz
+            self.meta=meta
 
     def __getitem__(self, key):
         return self.data[key]
@@ -52,12 +60,24 @@ class Catalog(object):
         Reads Catalog from H5 file, specified as argument
         """
         of=h5py.File(fname, "r")
-        self.data=of["data"].value
-        print("Fix reader")
-        stop()
-        print("Read %i entries from %s"%(len(self.data),fname))
+        self.data=of["objects"].value
+        self.meta=of["meta"].attrs
+        if "dNdz" in of.keys():
+            self.dNdz=of['dNdz'].value 
+        if "bz" in of.keys():
+            self.bz=of['bz'].value
+        self.window=window.readWindowH5(of['window'])
+        self.photoz=photoz.readPhotoZH5(of['photoz'])
+        version=float(self.meta['version'])
+        if version==0.1:
+            print("updating to version ", self.version)
+            ## also fix stupid bug in v0.1 in random field
+            self.data=recfunctions.append_fields(self.data,'z',self.data["z_real_t"]+(1+self.data["z_real_t"])*self.data["z_error"],
+                                                 usemask=False)
+            self.data=self.data[ [ name for name in self.data.dtype.names if name not in ["z_real_t", "z_rsd_t","z_error"] ] ]
+            
 
-    def dumpH5(self, fname):
+    def writeH5(self, fname):
         """ 
         Write Catalog to H5 file, specified as argument
         """
@@ -66,22 +86,38 @@ class Catalog(object):
             meta=of.create_dataset("meta",data=[])
             for v in self.meta.keys():
                 meta.attrs[v]=self.meta[v]
+            meta.attrs['version']=self.version
+            
         dset=of.create_dataset("objects", data=self.data, chunks=True,
                                shuffle=True,compression="gzip", compression_opts=9)
         if type(self.dNdz)!=type(None):
             dset=of.create_dataset("dNdz", data=self.dNdz)
         if type(self.bz)!=type(None):
             dset=of.create_dataset("bz", data=self.bz)
-        if type(self.window)!=type(None):
-            wfunc=of.create_dataset("window",data=[])
-            for k,v in self.window.items():
-                wfunc.attrs[k]=v
-        if type(self.photoz)!=type(None):
-            photoz=of.create_dataset("photoz",data=[])
-            for k,v in self.photoz.items():
-                photoz.attrs[k]=v
+        wfunc=of.create_dataset("window",data=[])
+        self.window.writeH5(wfunc)
+        pz=of.create_dataset("photoz",data=[])
+        self.photoz.writeH5(pz)
 
+    def setWindow(self,window,apply_to_data=True):
+        """ 
+        Sets window function to window
+        and then optionally applies it to the current data by sampling probabilities
+        """
+        self.window=window
+        if (apply_to_data):
+            self.data=self.window.applyWindow(self.data)
 
+    def setPhotoZ(self,photoz,apply_to_data=True):
+        """ 
+        Sets PZ description
+        and then optionally applies it to the current data by sampling probabilities
+        """
+        self.photoz=photoz
+        if (apply_to_data):
+            self.data=self.photoz.applyPhotoZ(self.data)
+
+            
     def dumpPhoSim(self, fname, header="", manyFiles=False, sedName="../sky/sed_flat.txt", 
                    objtype="sersic2D", ssize=2.0*u.arcsec):
         """
