@@ -1,0 +1,75 @@
+This page describes the schema for the mocks used in 2-point
+validation. The format will evolve, that is why it initially looks
+contrived: we want to make codes that are capable of working
+everything they need from the data itself – this prevents both pain
+and possible mistakes from manual intervention. We use HDF5 format. A
+useful tool to inspect these is
+
+https://www.hdfgroup.org/products/java/hdfview/
+
+The main datasets has the following subdatasets:
+
+## meta
+
+Contains meta information from the run stored as dataset attributes (dataset is otherwise empty).
+
+* colore_key=value are input parameters to CoLoRe run
+
+* version is the current version of the mock
+
+* timestamp contains the time when the mock was created for bookkeeping
+
+## dNdz
+
+mean number density of objects as a function of redshift. Two columns: z and dNdz. The latter is in #/sq deg/dz
+
+
+## bz
+
+bias of objects as a function of redshift. Two columns: z and bz.
+
+
+## photoz
+
+Type of photozs used. Information stored as dataset attributes.
+
+The field "type" contains type and at the moment the only valid type is "fixed_sigma".
+
+The actual sigma value is stored in the attribute "sigma" as in sigma(z)/(1+z)="sigma"
+
+In the future, "type" will contain more complicated types.
+
+## window
+
+Window function of the survey. The field "type" contains type and at
+the moment the only valid type is "decbcut" (i.e declination and b
+cut")
+
+The cuts are stored in "dec_min", "dec_max" and "b_cut" fields. Only
+galaxies with declinations between dec_min and dec_max and b>b_cut are
+kept.
+
+Parameter b is the galactic longitude and we used icrs->galactic
+conversion facility of astropy to determine it.
+
+In the future, this dataset will store more healpix window functions,
+etc.  
+
+## objects
+
+Actual positions of objects. The following fields are supported,
+although you should not rely on any of them being stored, except "ra"
+and "dec" 
+
+* ra - right ascencion in icrs coordinates
+
+* dec - declination in icrs coordinats
+
+* z_real_t - true cosmological redshift in real space
+
+* z_red_t - true cosmological redshift in redshift space
+
+* z_error - realization of the photo-z error if photoz type = fixed_sigma. You should add this to either z_real_t or z_red_t. 
+   Note that in version 0.1 due to a idiotic carelessness, numbers were drawn from sigma rather than (1+z)*sigma. 
+   You need to multiply this number by (1+z) in order to generate actual error.
+

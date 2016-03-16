@@ -2,6 +2,22 @@
 
 Fast and dirty creation of fast and dirty mock galaxy catalogs
 
+The basic module is now fastcat, that just provides a convenient
+interface to store galaxy catalogs, together with objectified
+understanding of window function and photo-z errors. It used to be
+able to generate them using randomfield package, but this is now
+broken. It is primarily use as storege inside (the private) DESC
+2pt_validation repo.
+
+Directories:
+* fastcat is the actual python  module.
+
+* hdf5_format_doc is the description of HDF5 format, per version.
+
+
+
+# OBSOLETE STUFF BELOW
+
 This packages takes randomfield to generate a random delta field and
 then creates a set of astro objects that have the correct large scale
 bias using two different algorithms (or make random catalogs). It can
