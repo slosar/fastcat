@@ -94,8 +94,7 @@ class Catalog(object):
             dset=of.create_dataset("dNdz", data=self.dNdz)
         if type(self.bz)!=type(None):
             dset=of.create_dataset("bz", data=self.bz)
-        wfunc=of.create_dataset("window",data=[])
-        self.window.writeH5(wfunc)
+        self.window.writeH5(of)
         pz=of.create_dataset("photoz",data=[])
         self.photoz.writeH5(pz)
 

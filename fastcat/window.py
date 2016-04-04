@@ -3,6 +3,8 @@
 ##
 import numpy as np
 import astropy.coordinates as ac
+import healpy as hp
+
 ## this method does not need an object    
 def readWindowH5(dataset):
     name=dataset.attrs['type']
@@ -11,6 +13,8 @@ def readWindowH5(dataset):
     toret=WindowBase.readH5(dataset)
     if toret is not None: return toret
     toret=WindowDecBcut.readH5(dataset)
+    if toret is not None: return toret
+    toret=WindowHealpix.readH5(dataset)
     if toret is not None: return toret
     print "Unknown window type!"
     stop()
@@ -38,8 +42,10 @@ class WindowBase(object):
             return 1.0
         else:
             return np.ones(len(ra))
-    def writeH5 (self,dataset):
-        dataset.attrs['type']=self.typestr
+
+    def writeH5 (self,of):
+        dset=of.create_dataset("window",data=[])
+        dset.attrs['type']=self.typestr
 
     @staticmethod
     def readH5 (dataset):
@@ -92,7 +98,8 @@ class WindowDecBcut(WindowBase):
             toret[np.where(abs(galb)<self.b_cut)]=0.0
             return toret
 
-    def writeH5 (self,dataset):
+    def writeH5 (self,of):
+        dataset=of.create_dataset("window",data=[])
         dataset.attrs['type']=self.typestr
         dataset.attrs['dec_min']=self.dec_min
         dataset.attrs['dec_max']=self.dec_max
@@ -110,4 +117,41 @@ class WindowDecBcut(WindowBase):
             return WindowDecBcut(dec_min, dec_max,b_cut)
         else:
             return None
+        
+
+
+class WindowHealpix(WindowBase):
+    """
+    Implements a healpix based map
+    """
+    typestr='healpix'
+    
+    def __init__(self,healpixmap, info):
+        self.map=healpixmap
+        self.info=info
+        self.nside=hp.pixelfunc.npix2nside(len(self.map))
+        
+    def __call__(self,ra,dec):
+        phi=ra/180.*np.pi
+        theta=np.pi/2-dec/180.*np.pi
+        ndx=hp.pixelfunc.ang2pix(self.nside, theta,phi)
+        return self.map[ndx]
+
+    def writeH5 (self,of):
+        dset=of.create_dataset("window",data=self.map)
+        dset.attrs['type']=self.typestr
+        dset.attrs['info']=self.info
+
+    @staticmethod
+    def readH5 (dataset):
+        """ Tries to read from H5.
+            If not matched, return None
+        """
+        if dataset.attrs['type']==WindowHealpix.typestr:
+            info=dataset.attrs['info']
+            hmap=dataset.value
+            return WindowHealpix(hmap,info)
+        else:
+            return None
+        
         
