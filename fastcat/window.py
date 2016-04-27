@@ -71,6 +71,9 @@ class WindowBase(object):
         print "After window: ",N,"->",len(arr)
         return arr
 
+    def NameString (self):
+        return "FullSky"
+    
 class WindowDecBcut(WindowBase):
     """
     Implements a basic declination cut and galactic b cut
@@ -118,6 +121,8 @@ class WindowDecBcut(WindowBase):
         else:
             return None
         
+    def NameString (self):
+        return "RaDecCut"
 
 
 class WindowHealpix(WindowBase):
@@ -126,9 +131,10 @@ class WindowHealpix(WindowBase):
     """
     typestr='healpix'
     
-    def __init__(self,healpixmap, info):
+    def __init__(self,healpixmap, info, shortinfo):
         self.map=healpixmap
         self.info=info
+        self.sinfo=shortinfo
         self.nside=hp.pixelfunc.npix2nside(len(self.map))
         
     def __call__(self,ra,dec):
@@ -154,4 +160,6 @@ class WindowHealpix(WindowBase):
         else:
             return None
         
+    def NameString (self):
+        return "hpix_"+self.sinfo
         

@@ -71,7 +71,10 @@ class PhotoZBase(object):
         dzo2=dz/2
         P[np.where(abs(arr["z"]-z)<dzo2)]=1.0
         return P
-                    
+
+    def NameString(self):
+        return "TrueZ"
+    
     
 class PhotoZGauss(PhotoZBase):
     """
@@ -125,5 +128,8 @@ class PhotoZGauss(PhotoZBase):
         sig=self.sigma*(1+arr["z"])
         norm=1./np.sqrt(2*np.pi)/sig
         return np.exp(-(arr["z"]-z)**2/(2*self.sigma**2))*norm*dz
+
+    def NameString(self):
+        return "GaussPZ_"+str(self.sigma)
     
     
