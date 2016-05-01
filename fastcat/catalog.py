@@ -19,13 +19,7 @@ class Catalog(object):
     It holds a structured array which you can access directly.
     Eg. cat["ra"] will give you 1D array of ra coordinas. Valid names are:
     
-    * "ra", "dec": float, ra,dec coordinates in radians
-    * "z": float, redshift
-    * "r": float, distance in Mpc/h
-    * "rmag": float, rmagnitude
-    * "e1","e2" : float, intrinsic ellipticity
-    * "g1","g2" : float, shears
-    It also has a placeholder for meta-data, which is empty at the moment
+    See hdf5_format_doc for a more complete documentation
 
     On construction:
     Options
@@ -35,7 +29,7 @@ class Catalog(object):
     meta: string
        string containing meta info
    """
-    version=0.2
+    version=0.3
     
     def __init__ (self, N=0, fields=['ra','dec','z'],dNdz=None, bz=None,window=window.WindowBase(),
                   photoz=None,meta=None, read_from=None):
@@ -68,13 +62,19 @@ class Catalog(object):
             self.bz=of['bz'].value
         self.window=window.readWindowH5(of['window'])
         self.photoz=photoz.readPhotoZH5(of['photoz'])
-        version=float(self.meta['version'])
-        if version==0.1:
-            print("updating to version ", self.version)
-            ## also fix stupid bug in v0.1 in random field
+        cversion=float(self.meta['version'])
+        if cversion==0.1:
+            print("updating 0.1 to version ", self.version)
+            self.data=recfunctions.append_fields(self.data,'sigma_pz',(1+self.data["z_real_t"])*self.data["z_error"],
+                                                 usemask=False)
             self.data=recfunctions.append_fields(self.data,'z',self.data["z_real_t"]+(1+self.data["z_real_t"])*self.data["z_error"],
                                                  usemask=False)
             self.data=self.data[ [ name for name in self.data.dtype.names if name not in ["z_real_t", "z_rsd_t","z_error"] ] ]
+        if cversion==0.2:
+            print("WARNING: upgrading from 0.2 to 0.3, photozs internally slightly inconsistent.")
+            self.data=recfunctions.append_fields(self.data,'sigma_pz',(1+self.data["z"])*self.photoz.sigma,
+                                                 usemask=False)
+            
             
 
     def writeH5(self, fname):
