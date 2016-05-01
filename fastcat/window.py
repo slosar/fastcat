@@ -146,7 +146,9 @@ class WindowHealpix(WindowBase):
     def writeH5 (self,of):
         dset=of.create_dataset("window",data=self.map)
         dset.attrs['type']=self.typestr
+        dset.attrs['short_info']=self.sinfo
         dset.attrs['info']=self.info
+        
 
     @staticmethod
     def readH5 (dataset):
@@ -155,8 +157,12 @@ class WindowHealpix(WindowBase):
         """
         if dataset.attrs['type']==WindowHealpix.typestr:
             info=dataset.attrs['info']
+            try:
+                sinfo=dataset.attrs['short_info']
+            except KeyError:
+                sinfo=info
             hmap=dataset.value
-            return WindowHealpix(hmap,info)
+            return WindowHealpix(hmap,info,sinfo)
         else:
             return None
         
