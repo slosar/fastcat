@@ -55,7 +55,7 @@ class PhotoZDoubleGauss():
     def applyPhotoZ (self,arr):
         print "Applying Double Gauss PZs"
         N=len(arr)
-        Nc=np.random.binomial(N,self.Acat*2.0/(1+self.Acat))
+        Nc=np.random.binomial(N,self.Acat)
         #new z array to store stuff
         nz=np.zeros(N)
         zsigma=np.zeros(N)
