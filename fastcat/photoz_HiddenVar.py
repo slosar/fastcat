@@ -128,12 +128,24 @@ class PhotoZHiddenVar():
             for i,z in enumerate(xar):
                 rect[:,i]=self.PofZ(arr,float(z),dz)/dz
             self.cnorm=trapz(rect,xar,axis=1)
-        Nx=int(zx/dz)
-        xar=np.linspace(0,zx,Nx)
-        rect=np.zeros((Ng,Nx))
-        for i,z in enumerate(xar):
-            rect[:,i]=self.PofZ(arr,float(z),dz)/dz
-        unnormC=trapz(rect,xar,axis=1)
+        # for floats
+        if (type(zx)==type(0.1)):    
+            Nx=int(zx/dz)
+            xar=np.linspace(0,zx,Nx)
+            rect=np.zeros((Ng,Nx))
+            for i,z in enumerate(xar):
+                rect[:,i]=self.PofZ(arr,float(z),dz)/dz
+            unnormC=trapz(rect,xar,axis=1)
+        else:
+        # for arrays
+            zxm=zx.max()
+            Nx=int(zxm/dz)
+            xar=np.linspace(0,zxm,Nx)
+            rect=np.zeros((Ng,Nx))
+            for i,z in enumerate(xar):
+                rect[:,i]=self.PofZ(arr,float(z),dz)/dz
+                rect[np.where(zx>z),i]=0.0
+            unnormC=trapz(rect,xar,axis=1)
         return unnormC/self.cnorm
     
     def NameString(self):
