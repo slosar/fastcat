@@ -7,6 +7,7 @@ from photoz_Base import PhotoZBase
 from photoz_Gauss import PhotoZGauss
 from photoz_DoubleGauss import PhotoZDoubleGauss
 from photoz_HiddenVar import PhotoZHiddenVar
+from photoz_Hist import PhotoZHist
 
 
 ## this method does not need an object    
