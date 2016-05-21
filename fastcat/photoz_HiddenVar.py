@@ -11,8 +11,7 @@ from  scipy.integrate import trapz
 from scipy.special import erf
 
 class PhotoZHiddenVar():
-    """
-    This implements mapping of z_true into f(z_true) that is multivalued
+    """This implements mapping of z_true into f(z_true) that is multivalued
     so that measurement of f(z_true) gives multiple bumps that
     by construction need to satify all probability rules
 
@@ -30,18 +29,29 @@ class PhotoZHiddenVar():
     f=ln(1+z)/sigma_z + const
 
     We make a step function so that f (z_step) = f(z_cat)
-    
+
+    For a single F that is doubled-valued in z for a given value in F,
+    we get a completelly symmetric pair of Gaussians. Therefore we
+    generte multiple Fs which will naturally then generate multiply sized Gaussians.
+
     """
     typestr='hiddenvar'
     
-    def __init__(self,sigma, zcat=0.1, zstep=0.6):
+    def __init__(self,sigma, zcat=[0.1,0.2], zstep=[0.6,0.65]):
         """ Specifiy sigma of the main Gaussian so that error is (1+z) sigma.
              At zstep we are indistiguishable from zcat.
+             zcat and zstep are arrays, so that F returns a vector rathen 
+             than a vaue.
+
         """
+        self.zcat=np.array(zcat)
+        self.zstep=np.array(zstep)
+        self.N=len(zcat)
+        assert(len(zcat)==len(zstep))
         self.sigma=sigma
-        self.zcat=zcat
-        self.zstep=zstep
-        self.step=(np.log(1+zstep)-np.log(1+zcat))/self.sigma
+        ## if we have N measurements, need sqrt(N) less noise per one
+        self.sigma1=sigma*np.sqrt(self.N)
+        self.step=(np.log(1.+self.zstep)-np.log(1+self.zcat))/self.sigma
         
     def writeH5 (self,dataset):
         dataset.attrs['type']=self.typestr
@@ -57,19 +67,16 @@ class PhotoZHiddenVar():
         ## also use old name 
         if dataset.attrs['type']==PhotoZHiddenVar.typestr:
             sigma=float(dataset.attrs['sigma'])
-            zcat=float(dataset.attrs['z_cat'])
-            zstep=float(dataset.attrs['z_step'])
+            zcat=np.array(dataset.attrs['z_cat'])
+            zstep=np.array(dataset.attrs['z_step'])
             return PhotoZHiddenVar(sigma, zcat, zstep)
         else:
             return None
 
     def Fofz(self, z):
-        F=np.log(1+z)/self.sigma
-        if (type(z)==type(1.0)):
-            if (z>self.zstep):
-                F-=self.step
-        else:
-            F[np.where(z>self.zstep)]-=self.step
+        F=np.outer(np.log(1+z)/self.sigma1,np.ones(self.N),)
+        for i,zstep in enumerate(self.zstep):
+            F[np.where(z>zstep),i]-=self.step[i]
         return F
 
     def dFdz(self, z):
@@ -81,12 +88,14 @@ class PhotoZHiddenVar():
         N=len(arr)
         F=self.Fofz(arr['z'])
         if addErrors:
-            F+=np.random.normal(0,1.0,N)
+            F+=np.random.normal(0,1.0,N*self.N).reshape((N,self.N))
         ## rename z into F
         nms=list(arr.dtype.names)
-        nms[nms.index('z')]='Fz'
+        nms[nms.index('z')]='Fz0'
         arr.dtype.names=tuple(nms)
-        arr['Fz']=F
+        arr['Fz0']=F[:,0]
+        for i in range(1,self.N):
+            arr=recfunctions.append_fields(arr,'Fz'+str(i),F[:,i]) 
         return arr
     
     def getMeanRMS (self,arr):
@@ -113,7 +122,10 @@ class PhotoZHiddenVar():
     def PofZ(self,arr,z,dz):
         """ Returns probability of PZ be at z +-dz/2"""
         Ft=self.Fofz(z)
-        chi2=(Ft-arr['Fz'])**2 ## error on F is one
+        Fm=np.zeros((len(arr),self.N))
+        for i in range(self.N):
+            Fm[:,i]=arr['Fz'+str(i)]
+        chi2=((Ft-Fm)**2).sum(axis=1) ## error on F is one
         return np.exp(-chi2/2)*dz
     
     def cPofZ(self,arr,zx):
@@ -149,5 +161,5 @@ class PhotoZHiddenVar():
         return unnormC/self.cnorm
     
     def NameString(self):
-        return "HiddenVarPZ_%f_%f_%f"%(self.sigma,self.zcat,self.zstep)
+        return "HiddenVarPZ_%f_%i"%(self.sigma,self.N)
     
