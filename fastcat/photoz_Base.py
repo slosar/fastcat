@@ -31,7 +31,19 @@ class PhotoZBase(object):
             return None
 
     def applyPhotoZ (self,arr):
-        """ nothing to do for base class"""
+        """ This function takes the catalog array containing
+            true redshifts in "z" field and generates PDFs for 
+            each galaxy in the array.
+            Note that by "generating" PDFs we mean generating sufficient
+            information that the PDF is completelly specified. For example,
+            in case of Gaussian photo-zs, this means generating relevant means
+            and variances. Such per-galaxy information should be stored back in the arr,
+            which ensures it is automatically saved when dumped to HDF. Any other general
+            meta-data (e.g. variance, if it is fixed for all zs, should be stored saved
+            and restoed in write/readHDF
+            
+            For base class, there is nothing to do.
+        """
         pass
         return arr
 
