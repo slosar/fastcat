@@ -57,12 +57,16 @@ class PhotoZHist(PhotoZBase):
         return dataset
     
     def writeH5(self, dataset):
-        raise NotImplementedError
+        dataset.attrs['type'] = self.typestr
+        dataset.attrs['file'] = self.file
 
     @staticmethod
     def readH5 (dataset):
-        raise NotImplementedError
-
+        if dataset.attrs['type']==PhotoZHist.typestr:
+            return PhotoZHist(dataset.attrs['file'])
+        else:
+            return None
+        
     def applyPhotoZ (self,arr):
         #true z
         zarr = arr['z']
