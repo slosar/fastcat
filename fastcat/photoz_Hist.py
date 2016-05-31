@@ -32,7 +32,6 @@ class PhotoZHist(PhotoZBase):
         cPofZ and PofZ as well
         """
         integrals = self.dataset[:, 3:].sum(axis=1)
-        print integrals.shape
         #integrals *= np.diff(self.dz)[0]
         self.dataset[:, 3:] = (np.where(integrals!=0., self.dataset[:, 3:].T/integrals, 0.)).T 
 
@@ -77,7 +76,6 @@ class PhotoZHist(PhotoZBase):
         #and the zbins where the true z fall
         zbins = np.searchsorted(self.z, zarr)
 
-        indices = self.tup2id(zbins, typebins, magbins)
         arr = recfunctions.append_fields(arr,
                                          ('iz','itype', 'imag'),
                                          (zbins, typebins, magbins)
@@ -88,7 +86,7 @@ class PhotoZHist(PhotoZBase):
     def tup2id(self, zbins, typebins, magbins):
         nmag = len(self.mag)
         ntype = len(self.type)
-        return magbins + nmag*(ntype*zbins+typebins)
+        return magbins + nmag*(ntype*zbins + typebins)
 
     def getpdf(self, arr):
         indices = self.tup2id(arr['iz'], arr['itype'], arr['imag'])
@@ -122,10 +120,11 @@ class PhotoZHist(PhotoZBase):
         #and to cache the pdf, possibly.
         #the integration scheme is very rough: just sum of bins.
         results=[]
-        for ztrue, pdf in zip(arr['z'], self.getpdf(arr)):
+        pdfs = self.getpdf(arr)
+        for i,ztrue in enumerate(arr['z']):
             xarr = ztrue + self.dz
-            yarr = pdf
-            masked_pdf = np.where(np.abs(xarr-z)<dz/2, yarr, 0)
+            yarr = pdfs[i]
+            masked_pdf = np.where(np.abs(xarr-z)<dz/2., yarr, 0.)
             results.append(np.sum(masked_pdf))
         return np.asarray(results) #* np.diff(self.dz)[0]
 
@@ -138,7 +137,7 @@ class PhotoZHist(PhotoZBase):
         for i, ztrue in enumerate(arr['z']):
             xarr = ztrue + self.dz
             yarr = pdfs[i]
-            masked_pdf = np.where(xarr<zx, yarr, 0)
+            masked_pdf = np.where(xarr<zx, yarr, 0.)
             results.append(np.sum(masked_pdf))
         return np.asarray(results) #* np.diff(self.dz)[0]
 
