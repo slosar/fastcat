@@ -21,13 +21,29 @@ class PhotoZHist(PhotoZBase):
             raise
         self.file = filepath
         self.dataset = self.readfile(filepath)
+        self._normalize()
 
+    def _normalize(self):
+        """
+        Normalize the pdfs in self.dataset by the sum.
+        The true normalization should also include a multiplication
+        by np.diff(self.dz)[0], assuming constant spacing as is the case.
+        But this added multiplication is not needed if it is discarded in
+        cPofZ and PofZ as well
+        """
+        integrals = self.dataset[:, 3:].sum(axis=1)
+        print integrals.shape
+        #integrals *= np.diff(self.dz)[0]
+        self.dataset[:, 3:] = (np.where(integrals!=0., self.dataset[:, 3:].T/integrals, 0.)).T 
+
+        
     def readfile(self, filepath):
         """
         Reads a specifically formatted file
         This could be overloaded by inheriting classes
         """
         #read comments to get the proper formatting
+        #we could also do sed -n 1,4p ../test/pzdist.txt
         res = subprocess.check_output(
             ['sed', '-n', '/%s/p'%'#', filepath]
             ).split('\n')[:-1]
@@ -56,15 +72,24 @@ class PhotoZHist(PhotoZBase):
         #add the undefined mag and types to the array,
         #and the zbins where the true z fall
         zbins = np.searchsorted(self.z, zarr)
+
+        indices = self.tup2id(zbins, typebins, magbins)
         arr = recfunctions.append_fields(arr,
                                          ('iz','itype', 'imag'),
                                          (zbins, typebins, magbins)
                                           )
-        photoz = self.drawPhotoZ(arr)
-        #arr['z'] = np.asarray(photoz)
-        arr = recfunctions.append_fields(arr,'zphot',photoz)
+        
         return arr
 
+    def tup2id(self, zbins, typebins, magbins):
+        nmag = len(self.mag)
+        ntype = len(self.type)
+        return magbins + nmag*(ntype*zbins+typebins)
+
+    def getpdf(self, arr):
+        indices = self.tup2id(arr['iz'], arr['itype'], arr['imag'])
+        return self.dataset[indices, 3:]
+        
     def drawPhotoZ(self, arr):
         nmag = len(self.mag)
         ntype = len(self.type)
@@ -73,24 +98,43 @@ class PhotoZHist(PhotoZBase):
         #first attempt : no mapreduce on the file bins
         #so the for loop is suboptimal
         photoz=[]
-        for rec in arr:
-            #line index for this entry in the input file
-            idx = rec['imag'] + \
-              nmag*(ntype*rec['iz']+rec['itype']) + rec['imag']
-            
-            photoz_pdf = self.dataset[idx][3:] #remove the 3 initial indices, which are iz itype imag for the corresponding line
+        indices = self.tup2id(arr['iz'], arr['itype'], arr['imag'])
+        for idx, ztrue in zip(indices, arr['z']):
+            #remove the 3 initial indices, which are iz itype imag for the corresponding line
+            # how better would a direct line extraction be, compared to loading the file as
+            # self.dataset and keeping it in memory : sed -n idx+5p ../test/pzdist.txt  ?
+            photoz_pdf = self.dataset[idx][3:] 
             if np.all(photoz_pdf==0.):
                 return -1
-            cumsum = np.cumsum(photoz_pdf)
-            u=np.random.random()*cumsum[-1]
-            izphot=np.searchsorted(cumsum, u)
-            photoz.append(self.dz[izphot]+rec['z'])
+            cumsum = np.cumsum( photoz_pdf )
+            u = np.random.random()*cumsum[-1]
+            izphot = np.searchsorted(cumsum, u)
+            photoz.append( self.dz[izphot] + ztrue )
 
         return photoz
 
     def PofZ(self,arr,z,dz):
-        raise NotImplementedError
+        #first implementation. Need to remove the for loop eventually
+        #and to cache the pdf, possibly.
+        #the integration scheme is very rough: just sum of bins.
+        results=[]
+        for ztrue, pdf in zip(arr['z'], self.getpdf(arr)):
+            xarr = ztrue + self.dz
+            yarr = pdf
+            masked_pdf = np.where(np.abs(xarr-z)<dz/2, yarr, 0)
+            results.append(np.sum(masked_pdf))
+        return np.asarray(results) #* np.diff(self.dz)[0]
 
     def cPofZ(self,arr,zx):
-        raise NotImplementedError
+        #first implementation. Need to remove the for loop eventually
+        #and to cache the pdf, possibly.
+        #the integration scheme is very rough: just sum of bins
+        results=[]
+        pdfs = self.getpdf(arr)
+        for i, ztrue in enumerate(arr['z']):
+            xarr = ztrue + self.dz
+            yarr = pdfs[i]
+            masked_pdf = np.where(xarr<zx, yarr, 0)
+            results.append(np.sum(masked_pdf))
+        return np.asarray(results) #* np.diff(self.dz)[0]
 
