@@ -116,28 +116,21 @@ class PhotoZHist(PhotoZBase):
         return photoz
 
     def PofZ(self,arr,z,dz):
-        #first implementation. Need to remove the for loop eventually
-        #and to cache the pdf, possibly.
+        #Need to cache the pdf?
         #the integration scheme is very rough: just sum of bins.
         results=[]
         pdfs = self.getpdf(arr)
-        for i,ztrue in enumerate(arr['z']):
-            xarr = ztrue + self.dz
-            yarr = pdfs[i]
-            masked_pdf = np.where(np.abs(xarr-z)<dz/2., yarr, 0.)
-            results.append(np.sum(masked_pdf))
-        return np.asarray(results) #* np.diff(self.dz)[0]
+        xarrs = arr['z'][:,np.newaxis] + self.dz
+        masked_pdf = np.where(np.abs(xarrs-z)<dz/2., pdfs, 0.)
+        results = np.sum(masked_pdf, axis=1)
+        return results
 
     def cPofZ(self,arr,zx):
-        #first implementation. Need to remove the for loop eventually
-        #and to cache the pdf, possibly.
+        #Need to cache the pdf?
         #the integration scheme is very rough: just sum of bins
         results=[]
         pdfs = self.getpdf(arr)
-        for i, ztrue in enumerate(arr['z']):
-            xarr = ztrue + self.dz
-            yarr = pdfs[i]
-            masked_pdf = np.where(xarr<zx, yarr, 0.)
-            results.append(np.sum(masked_pdf))
-        return np.asarray(results) #* np.diff(self.dz)[0]
-
+        xarrs = arr['z'][:,np.newaxis] + self.dz
+        masked_pdf = np.where(xarrs<zx, pdfs, 0.)
+        results = np.sum(masked_pdf, axis=1)
+        return results
