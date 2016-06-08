@@ -84,12 +84,6 @@ class PhotoZHist(PhotoZBase):
         #and the zbins where the true z fall
         zbins = np.array(np.searchsorted(self.z, zarr), dtype=[('iz', np.int)])
         
-        # arr = recfunctions.append_fields(arr,
-        #                                  ('iz','itype', 'imag'),
-        #                                  (zbins, typebins, magbins)
-        #                                   )
-        
-        #arr = recfunctions.merge_arrays([zbins, typebins, magbins], flatten = True, usemask = False)
         return self.join_struct_arrays([zbins, typebins, magbins])
 
     def tup2id(self, zbins, typebins, magbins):
