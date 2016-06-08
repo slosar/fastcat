@@ -83,8 +83,8 @@ class PhotoZHist(PhotoZBase):
         #add the undefined mag and types to the array,
         #and the zbins where the true z fall
         zbins = np.array(np.searchsorted(self.z, zarr), dtype=[('iz', np.int)])
-        
-        return self.join_struct_arrays([zbins, typebins, magbins])
+        newarr = self.join_struct_arrays([zbins, typebins, magbins])
+        return self.join_struct_arrays([arr, newarr])
 
     def tup2id(self, zbins, typebins, magbins):
         nmag = len(self.mag)
