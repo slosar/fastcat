@@ -15,7 +15,16 @@ class PhotoZHist(PhotoZBase):
     """
     typestr='hist'
     
-    def __init__(self, filepath):
+    @staticmethod
+    def registerOptions(parser):
+        parser.add_option("--pz_fpath", dest="franzonafile",
+                          default="/project/projectdirs/lsst/LSSWG/Franzona/pzdist.txt",
+                          help="PZ:path to Franzona ", type="string")
+
+
+    def __init__(self, filepath=None, options=None ):
+        if options is not None:
+            filepath=options.franzonafile
         if not os.path.exists(filepath):
             print 'No file %s present'%filepath
             raise
@@ -83,14 +92,8 @@ class PhotoZHist(PhotoZBase):
         #add the undefined mag and types to the array,
         #and the zbins where the true z fall
         zbins = np.array(np.searchsorted(self.z, zarr), dtype=[('iz', np.int)])
-        
-        # arr = recfunctions.append_fields(arr,
-        #                                  ('iz','itype', 'imag'),
-        #                                  (zbins, typebins, magbins)
-        #                                   )
-        
-        #arr = recfunctions.merge_arrays([zbins, typebins, magbins], flatten = True, usemask = False)
-        return self.join_struct_arrays([zbins, typebins, magbins])
+        newarr = self.join_struct_arrays([zbins, typebins, magbins])
+        return self.join_struct_arrays([arr, newarr])
 
     def tup2id(self, zbins, typebins, magbins):
         nmag = len(self.mag)
@@ -101,45 +104,51 @@ class PhotoZHist(PhotoZBase):
         indices = self.tup2id(arr['iz'], arr['itype'], arr['imag'])
         return self.dataset[indices, 3:]
         
-    def drawPhotoZ(self, arr):
-        nmag = len(self.mag)
-        ntype = len(self.type)
-        
-        #find the true z bins corresponding to the input z
-        #first attempt : no mapreduce on the file bins
-        #so the for loop is suboptimal
-        photoz=[]
-        indices = self.tup2id(arr['iz'], arr['itype'], arr['imag'])
-        for idx, ztrue in zip(indices, arr['z']):
-            #remove the 3 initial indices, which are iz itype imag for the corresponding line
-            # how better would a direct line extraction be, compared to loading the file as
-            # self.dataset and keeping it in memory : sed -n idx+5p ../test/pzdist.txt  ?
-            photoz_pdf = self.dataset[idx][3:] 
-            if np.all(photoz_pdf==0.):
-                return -1
-            cumsum = np.cumsum( photoz_pdf )
-            u = np.random.random()*cumsum[-1]
-            izphot = np.searchsorted(cumsum, u)
-            photoz.append( self.dz[izphot] + ztrue )
+    def drawPhotoZ(self, arr, nsamples):
+        ngal=arr.size
+        photoz_pdfs = self.getpdf(arr)
+        pz_samples = np.zeros((ngal, nsamples))
+        #deal immediately with flat 0 pdfs:
+        mask = photoz_pdfs.sum(axis=1)!=0
+        masked_pdfs = photoz_pdfs[mask]
+        #pz_samples[np.logical_not(mask)] = np.zeros(shape=(nsamples,))
 
-        return photoz
+        cumsum = np.cumsum(masked_pdfs, axis=1)
+        masked_ngal=cumsum.shape[0]
+        #draw uniform random numbers
+        u = np.random.random(masked_ngal*nsamples)
+        u=u.reshape(nsamples, masked_ngal)*cumsum[:,-1]
+        
+        dz=np.zeros((masked_ngal, nsamples))
+        #now loop over the masked gal to call searchsorted
+        #which only accepts 1D array as input
+        #this for loop will not scale well with high number of galaxies
+        for i in range(masked_ngal):
+            izphot = np.searchsorted(cumsum[i], u.T[i])
+            dz[i,:] = self.dz[izphot]
+        zphot = dz.T + arr[mask]['z']
+        pz_samples[mask] = zphot.T
+
+        return pz_samples
 
     def PofZ(self,arr,z,dz):
         #Need to cache the pdf?
         #the integration scheme is very rough: just sum of bins.
-        results=[]
+        results=np.zeros((arr.size))
         pdfs = self.getpdf(arr)
-        xarrs = arr['z'][:,np.newaxis] + self.dz
-        masked_pdf = np.where(np.abs(xarrs-z)<dz/2., pdfs, 0.)
-        results = np.sum(masked_pdf, axis=1)
+        mask = pdfs.sum(axis=1)!=0
+        xarrs = arr[mask]['z'][:,np.newaxis] + self.dz
+        masked_pdf = np.where(np.abs(xarrs-z)<dz/2., pdfs[mask], 0.)
+        results[mask] = np.sum(masked_pdf, axis=1)
         return results
 
     def cPofZ(self,arr,zx):
         #Need to cache the pdf?
         #the integration scheme is very rough: just sum of bins
-        results=[]
+        results=np.zeros((arr.size))
         pdfs = self.getpdf(arr)
-        xarrs = arr['z'][:,np.newaxis] + self.dz
-        masked_pdf = np.where(xarrs<zx, pdfs, 0.)
-        results = np.sum(masked_pdf, axis=1)
+        mask = pdfs.sum(axis=1)!=0
+        xarrs = arr[mask]['z'][:,np.newaxis] + self.dz
+        masked_pdf = np.where(xarrs<zx, pdfs[mask], 0.)
+        results[mask] = np.sum(masked_pdf, axis=1)
         return results
