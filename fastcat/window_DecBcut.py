@@ -8,11 +8,23 @@ class WindowDecBcut(WindowBase):
     Implements a basic declination cut and galactic b cut
     """
     typestr='decbcut'
-    
-    def __init__(self,dec_min,dec_max, b_cut):
+
+    @staticmethod
+    def registerOptions (parser):
+        parser.add_option("--wf_decmin", dest="decmin", default=-70,
+                          help="minimum declination", type="float")
+        parser.add_option("--wf_decmax", dest="decmax", default=10,
+                          help="maximum declination", type="float")
+        parser.add_option("--wf_bcut", dest="bcut", default=5,
+                          help="Cut in galactic b", type="float")
+
+    def __init__(self,dec_min=None, dec_max=None, b_cut=None, options=None):
+        if options is not None:
+            dec_min,dec_max,b_cut=options.decmin, options.decmax, options.bcut
         self.dec_min=dec_min
         self.dec_max=dec_max
         self.b_cut=b_cut
+
 
     def __call__(self,ra,dec):
         

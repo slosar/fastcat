@@ -15,7 +15,16 @@ class PhotoZHist(PhotoZBase):
     """
     typestr='hist'
     
-    def __init__(self, filepath):
+    @staticmethod
+    def registerOptions(parser):
+        parser.add_option("--pz_fpath", dest="franzonafile",
+                          default="/project/projectdirs/lsst/LSSWG/Franzona/pzdist.txt",
+                          help="PZ:path to Franzona ", type="string")
+
+
+    def __init__(self, filepath=None, options=None ):
+        if options is not None:
+            filepath=options.franzonafile
         if not os.path.exists(filepath):
             print 'No file %s present'%filepath
             raise

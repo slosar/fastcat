@@ -13,7 +13,9 @@ class PhotoZGauss(PhotoZBase):
     """
     typestr='gauss'
     
-    def __init__(self,sigma):
+    def __init__(self,sigma=None,options=None):
+        if options is not None:
+            sigma=options.pz_sigma
         self.sigma=sigma
 
     def writeH5 (self,dataset):

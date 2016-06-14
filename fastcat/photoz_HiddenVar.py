@@ -36,14 +36,29 @@ class PhotoZHiddenVar():
 
     """
     typestr='hiddenvar'
+
+    @staticmethod
+    def parse_list_callback(option, opt, value, parser):
+        setattr(parser.values, option.dest, map(float,value.split(',')))
+
+    @staticmethod
+    def registerOptions(parser):
+        parser.add_option('--pz_zcat', dest="zcat", 
+                type='string',action='callback', callback=PhotoZHiddenVar.parse_list_callback,
+                 help="PZ: catastrophic redshifts for HV",default=[0.1,0.2])
+        parser.add_option('--pz_zstep', dest="zstep", 
+                type='string',action='callback', callback=PhotoZHiddenVar.parse_list_callback,
+                help="PZ: catastrophic z steps for HV",default=[0.6,0.65])
     
-    def __init__(self,sigma, zcat=[0.1,0.2], zstep=[0.6,0.65]):
+    def __init__(self,sigma=None, zcat=None, zstep=None,options=None):
         """ Specifiy sigma of the main Gaussian so that error is (1+z) sigma.
              At zstep we are indistiguishable from zcat.
              zcat and zstep are arrays, so that F returns a vector rathen 
              than a vaue.
 
         """
+        if (options is not None):
+            sigma,zcat,zstep=options.pz_sigma,options.zcat,options.zstep
         self.zcat=np.array(zcat)
         self.zstep=np.array(zstep)
         self.N=len(zcat)
@@ -64,7 +79,6 @@ class PhotoZHiddenVar():
         """ Tries to read from H5.
             If not matched, return None
         """
-        ## also use old name 
         if dataset.attrs['type']==PhotoZHiddenVar.typestr:
             sigma=float(dataset.attrs['sigma'])
             zcat=np.array(dataset.attrs['z_cat'])

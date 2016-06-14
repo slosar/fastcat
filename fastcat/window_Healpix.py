@@ -9,8 +9,20 @@ class WindowHealpix(WindowBase):
     Implements a healpix based map
     """
     typestr='healpix'
+
+
+    @staticmethod
+    def registerOptions (parser):
+        parser.add_option("--wf_healpixmap", dest="healpixmap", default="",
+                          help="WF: healpix map filename", type="string")
+        parser.add_option("--wf_healpix_info", dest="wfinfo", default="",
+                          help="WF: healpix info", type="string")
+        parser.add_option("--wf_healpix_shortinfo", dest="wfshortinfo", default="",
+                          help="WF: healpix short info", type="string")
     
-    def __init__(self,healpixmap, info, shortinfo):
+    def __init__(self, healpixmap=None, info=None, shortinfo=None, options=None):
+        if options is not None:
+            healpixmap,info,shortinfo=options.healpixmap,options.wfinfo, options.wfshortinfo
         self.map=healpixmap
         self.info=info
         self.sinfo=shortinfo
