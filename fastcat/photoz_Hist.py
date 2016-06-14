@@ -66,22 +66,31 @@ class PhotoZHist(PhotoZBase):
         else:
             return None
         
+    def join_struct_arrays(self, arrays):
+        newdtype = sum((a.dtype.descr for a in arrays), [])
+        newrecarray = np.empty(len(arrays[0]), dtype = newdtype)
+        for a in arrays:
+            for name in a.dtype.names:
+                newrecarray[name] = a[name]
+        return newrecarray
+
     def applyPhotoZ (self,arr):
         #true z
         zarr = arr['z']
         #sample mag and type randomly for now
-        magbins = np.random.randint(low=len(self.mag), size=len(arr))
-        typebins = np.random.randint(low=len(self.type), size=len(arr))
+        magbins = np.array(np.random.randint(low=len(self.mag), size=len(arr)), dtype=[('imag', np.int)])
+        typebins = np.array(np.random.randint(low=len(self.type), size=len(arr)), dtype=[('itype', np.int)])
         #add the undefined mag and types to the array,
         #and the zbins where the true z fall
-        zbins = np.searchsorted(self.z, zarr)
-
-        arr = recfunctions.append_fields(arr,
-                                         ('iz','itype', 'imag'),
-                                         (zbins, typebins, magbins)
-                                          )
+        zbins = np.array(np.searchsorted(self.z, zarr), dtype=[('iz', np.int)])
         
-        return arr
+        # arr = recfunctions.append_fields(arr,
+        #                                  ('iz','itype', 'imag'),
+        #                                  (zbins, typebins, magbins)
+        #                                   )
+        
+        #arr = recfunctions.merge_arrays([zbins, typebins, magbins], flatten = True, usemask = False)
+        return self.join_struct_arrays([zbins, typebins, magbins])
 
     def tup2id(self, zbins, typebins, magbins):
         nmag = len(self.mag)
