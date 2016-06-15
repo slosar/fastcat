@@ -3,10 +3,6 @@
 # 
 #
 
-import numpy as np
-import astropy.coordinates as ac
-import healpy as hp
-
 from window_Healpix import WindowHealpix
 
 class WindowHumna(WindowHealpix):

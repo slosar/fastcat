@@ -1,6 +1,9 @@
 import numpy as np
 import astropy.coordinates as ac
-import healpy as hp
+try:
+    import healpy as hp
+except ImportError:
+    print "Warning: no healpy, window healpix won't work"
 
 from window_Base import WindowBase
 
