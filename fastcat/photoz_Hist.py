@@ -5,6 +5,7 @@
 
 import os, subprocess
 import numpy as np
+import cPickle
 from numpy.lib import recfunctions
 from photoz_Base import PhotoZBase
 from scipy import interpolate, integrate
@@ -18,18 +19,30 @@ class PhotoZHist(PhotoZBase):
     @staticmethod
     def registerOptions(parser):
         parser.add_option("--pz_fpath", dest="franzonafile",
-                          default="/project/projectdirs/lsst/LSSWG/Franzona/pzdist.txt",
+                          default="Franzona/pzdist.txt",
                           help="PZ:path to Franzona ", type="string")
 
 
     def __init__(self, filepath=None, options=None ):
         if options is not None:
-            filepath=options.franzonafile
+            if os.environ.has_key('DESC_LSS_ROOT'):
+                root=os.environ['DESC_LSS_ROOT']
+            else:
+                root="/project/projectdirs/lsst/LSSWG"
+            filepath=root+"/"+options.franzonafile
         if not os.path.exists(filepath):
             print 'No file %s present'%filepath
             raise
         self.file = filepath
-        self.dataset = self.readfile(filepath)
+        print "Reading file..."
+        try:
+            self.dataset,self.z, self.type, self.mag, self.dz=cPickle.load(open(filepath+".pickle"))
+            print "Using pickled version of Franzona file!"
+        except IOError:
+            self.dataset = self.readfile(filepath)
+            print "Creating pickled version of Franzona file!"
+            cPickle.dump((self.dataset,self.z, self.type, self.mag, self.dz),open(filepath+".pickle",'w'),protocol=-1)
+        print "done..."
         self._normalize()
 
     def _normalize(self):
@@ -50,16 +63,15 @@ class PhotoZHist(PhotoZBase):
         Reads a specifically formatted file
         This could be overloaded by inheriting classes
         """
-        #read comments to get the proper formatting
-        #we could also do sed -n 1,4p ../test/pzdist.txt
-        res = subprocess.check_output(
-            ['sed', '-n', '/%s/p'%'#', filepath]
-            ).split('\n')[:-1]
-        for dim in res:
-            n, m, M, s = dim.split()
-            setattr(self, n[1:],
+        with open(filepath,'r') as f:
+            while True:
+                line=f.readline()
+                if line[0]=='#':
+                    n, m, M, s = line.split()
+                    setattr(self, n[1:],
                     np.arange(float(m),float(M)+float(s),float(s)))
-
+                else:
+                    break
         #this takes a bit of time: improve?
         dataset = np.loadtxt(self.file)
         return dataset
