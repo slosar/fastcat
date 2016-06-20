@@ -2,8 +2,6 @@
 ## Class describing window function
 ##
 import numpy as np
-import astropy.coordinates as ac
-import healpy as hp
 
 from window_Base import WindowBase
 from window_DecBcut import WindowDecBcut
