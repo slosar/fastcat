@@ -1,11 +1,11 @@
 #
-# Humna window is just a think wrapper around healpix window
+# DepthVariations window is just a think wrapper around healpix window
 # 
 #
 
 from window_Healpix import WindowHealpix
 
-class WindowHumna(WindowHealpix):
+class WindowDepthVariations(WindowHealpix):
     """
     Implements a healpix based map
     """
@@ -15,7 +15,7 @@ class WindowHumna(WindowHealpix):
     @staticmethod
     def registerOptions (parser):
         parser.add_option("--wf_humnapath", dest="hpath",
-                  default="/project/projectdirs/lsst/LSSWG/HumnaDepthVariations",
+                  default="/project/projectdirs/lsst/LSSWG/DepthVariations",
                   help="Path to humna depth maps", type="string")
         parser.add_option("--wf_humnamap", dest="humnamap", type="string",
                   help="humna map type [nodither, reprandom]", default="nodither")
@@ -43,10 +43,10 @@ class WindowHumna(WindowHealpix):
             amask=np.where(mask==False)
             cmin,cmax,cmean=vals[amask].min(), vals[amask].max(), vals[amask].mean()
             print "Window func min, max, mean:",cmin,cmax,cmean
-            info="HumnaDepthVariations map=%s dlogndmlim=%f"%(options.humnamap,options.dlogndmlim)
+            info="DepthVariationsDepthVariations map=%s dlogndmlim=%f"%(options.humnamap,options.dlogndmlim)
             shortinfo=options.humnamap+"_"+str(options.dlogndmlim)
             WindowHealpix.__init__(self,vals,info,shortinfo)
         else:
-            print "Humna really needs options"
+            print "DepthVariations really needs options"
             stop()
             

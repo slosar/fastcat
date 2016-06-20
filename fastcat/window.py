@@ -6,7 +6,7 @@ import numpy as np
 from window_Base import WindowBase
 from window_DecBcut import WindowDecBcut
 from window_Healpix import WindowHealpix
-from window_Humna import WindowHumna
+from window_DepthVariations import WindowDepthVariations
 
 ## this method does not need an object    
 def readWindowH5(dataset):
@@ -30,7 +30,7 @@ def registerOptions(parser):
                   default="humna")
     WindowDecBcut.registerOptions(parser)
     WindowHealpix.registerOptions(parser)
-    WindowHumna.registerOptions(parser)
+    WindowDepthVariations.registerOptions(parser)
 
     
 def getWindowFunc(o):
@@ -41,7 +41,7 @@ def getWindowFunc(o):
     elif o.wftype=="healpix":
         return WindowHealpix(options=o)
     elif o.wftype=="humna":
-        return WindowHumna(options=o)
+        return WindowDepthVariations(options=o)
     else:
         print "Bad WF type:",o.wftype
         stop()
