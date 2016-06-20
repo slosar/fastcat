@@ -164,3 +164,6 @@ class PhotoZHist(PhotoZBase):
         masked_pdf = np.where(xarrs<zx, pdfs[mask], 0.)
         results[mask] = np.sum(masked_pdf, axis=1)
         return results
+
+    def NameString(self):
+        return "Franzona"
