@@ -4,6 +4,7 @@
 #
 
 from window_Healpix import WindowHealpix
+import numpy as np
 
 class WindowDepthVariations(WindowHealpix):
     """
