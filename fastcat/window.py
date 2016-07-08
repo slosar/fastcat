@@ -26,8 +26,8 @@ def readWindowH5(dataset):
 
 def registerOptions(parser):
     parser.add_option("--wf_type",dest="wftype",type="string",
-                help="window func type [none,radecbcut,healpix, humna]",
-                  default="humna")
+                      help="window func type [none,radecbcut,healpix, depthvar]",
+                  default="depthvar")
     WindowDecBcut.registerOptions(parser)
     WindowHealpix.registerOptions(parser)
     WindowDepthVariations.registerOptions(parser)
@@ -40,7 +40,7 @@ def getWindowFunc(o):
         return WindowDecBcut(options=o)
     elif o.wftype=="healpix":
         return WindowHealpix(options=o)
-    elif o.wftype=="humna":
+    elif o.wftype=="depthvar":
         return WindowDepthVariations(options=o)
     else:
         print "Bad WF type:",o.wftype

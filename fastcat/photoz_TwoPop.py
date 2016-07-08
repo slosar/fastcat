@@ -21,7 +21,7 @@ class PhotoZTwoPop(PhotoZGauss):
         parser.add_option("--pz_facbad", dest="facbad", default=5.0,
                           help="PZ: factor poor PZ for twopop", type="float")
     
-    def __init__(self,sigma=None,fbad=None, facbat=None, options=None):
+    def __init__(self,sigma=None,fbad=None, facbad=None, options=None):
         """ 
         A fbad fraction of galaxies will have sigma that is worse
         by facbad

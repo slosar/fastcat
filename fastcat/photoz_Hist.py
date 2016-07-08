@@ -24,15 +24,25 @@ class PhotoZHist(PhotoZBase):
 
 
     def __init__(self, filepath=None, options=None ):
+        print "filepath=",filepath, "options=",options
+        # A hack for presaved files
+        ## this needs to be done better, we cannot be saving absolute paths
+        ## as this breaks portability
+        if (options is None):
+            if os.environ.has_key('DESC_LSS_ROOT'):
+                filepath=filepath.replace("/project/projectdirs/lsst/LSSWG",os.environ['DESC_LSS_ROOT'])
+
         if options is not None:
             if os.environ.has_key('DESC_LSS_ROOT'):
                 root=os.environ['DESC_LSS_ROOT']
             else:
                 root="/project/projectdirs/lsst/LSSWG"
             filepath=root+"/"+options.franzonafile
+
+        
         if not os.path.exists(filepath):
             print 'No file %s present'%filepath
-            raise
+            raise IOError
         self.file = filepath
         print "Reading file..."
         try:

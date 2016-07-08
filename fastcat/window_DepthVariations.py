@@ -31,7 +31,7 @@ class WindowDepthVariations(WindowHealpix):
             elif options.humnamap=="reprandom":
                 mapfn="/coaddM5Data_masked_rBand_RepulsiveRandomDitherFieldPerVisit.npz"
             else:
-                print "Unknown humna type map"
+                print "Unknown depth variations type map"
                 stop()
             mapfn=options.hpath+mapfn
             print "     Reading mapfn",mapfn,"..."
