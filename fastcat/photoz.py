@@ -31,7 +31,7 @@ def registerOptions(parser):
         help="photo z type [none,gauss, twopop, hiddenvar, franzona]",
                   default="gauss")
     ## commonly used, so register it globally
-    parser.add_option("--pz_sigma", dest="pz_sigma", default=0.01,
+    parser.add_option("--pz_sigma", dest="pz_sigma", default=0.03,
                       help="PZ: Guass sigma for (1+z)", type="float")
     PhotoZTwoPop.registerOptions(parser)
     PhotoZHiddenVar.registerOptions(parser)
