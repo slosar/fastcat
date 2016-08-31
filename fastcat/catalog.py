@@ -74,8 +74,6 @@ class Catalog(object):
             print("WARNING: upgrading from 0.2 to 0.3, photozs internally slightly inconsistent.")
             self.data=recfunctions.append_fields(self.data,'sigma_pz',(1+self.data["z"])*self.photoz.sigma,
                                                  usemask=False)
-            
-            
 
     def writeH5(self, fname):
         """ 
@@ -115,6 +113,24 @@ class Catalog(object):
         self.photoz=photoz
         if (apply_to_data):
             self.data=self.photoz.applyPhotoZ(self.data)
+
+    def appendCatalog(self, addcat):
+        """
+        Expands current catalog and then for those fields that are in common,
+        add data from newcat.
+        """
+        N1=len(self.data)
+        Nx=len(self.data.dtype)
+        N2=len(addcat.data)
+        newdata=np.zeros(((N1+N2),),dtype=self.data.dtype)
+        newdata[0:N1]=self.data
+        for n in addcat.data.dtype.names:
+            if n in newdata.dtype.names:
+                newdata[n][N1:]=addcat.data[n]
+            else:
+                print("Warning: not adding ",a," in catalog.appendCatalog")
+        self.data=newdata
+
 
             
     def dumpPhoSim(self, fname, header="", manyFiles=False, sedName="../sky/sed_flat.txt", 
