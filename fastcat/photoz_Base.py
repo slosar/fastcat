@@ -79,7 +79,19 @@ class PhotoZBase(object):
         cP=zeros(N)
         cP[np.where(arr["z"]<zx)]=1.0
         return cP
+
+    def iPofZ(self,arr,zmin,zmax):
+        """ Returns integrated probability int_zmin^zmax p(z) """
+        return self.cPofZ(arr,zmax)-self.cPofZ(arr,zmin)
     
+    def NofZ(self,arr,zmin,zmax,dz):
+        """ Returns zarr, N(z) by summing probs in array arange(zmin,zmax,dz)"""
+        zarr=np.arange(zmin,zmax,dz)
+        Nz=np.zeros(len(zarr))
+        for i,z in enumerate(zarr):
+            Nz[i]=(self.PofZ(arr,z,dz)).sum()
+        return zarr,Nz
+
     def NameString(self):
         return "TrueZ"
     
