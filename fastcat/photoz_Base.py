@@ -68,7 +68,7 @@ class PhotoZBase(object):
     def PofZ(self,arr,z,dz):
         """ Returns probability of PZ be at z +-dz/2"""
         N=len(arr)
-        P=zeros(N)
+        P=np.zeros(N)
         dzo2=dz/2
         P[np.where(abs(arr["z"]-z)<dzo2)]=1.0
         return P
@@ -76,7 +76,7 @@ class PhotoZBase(object):
     def cPofZ(self,arr,zx):
         """ Returns cumulative probability of PZ be at z<zx"""
         N=len(arr)
-        cP=zeros(N)
+        cP=np.zeros(N)
         cP[np.where(arr["z"]<zx)]=1.0
         return cP
 
