@@ -8,9 +8,10 @@ from photoz_Gauss import PhotoZGauss
 from photoz_TwoPop import PhotoZTwoPop
 from photoz_HiddenVar import PhotoZHiddenVar
 from photoz_Hist import PhotoZHist
+from photoz_TemplateSED import PhotoZTemplateSED
 
 
-## this method does not need an object    
+## this method does not need an object
 def readPhotoZH5(dataset):
     name=dataset.attrs['type']
     toret=PhotoZBase.readH5(dataset)
@@ -36,7 +37,7 @@ def registerOptions(parser):
     PhotoZTwoPop.registerOptions(parser)
     PhotoZHiddenVar.registerOptions(parser)
     PhotoZHist.registerOptions(parser)
-    
+
 def getPhotoZ(o):
     if o.pztype=="none":
         pz = PhotoZBase()
