@@ -10,9 +10,6 @@ from scipy.interpolate import InterpolatedUnivariateSpline, interp1d
 
 from photoz_Base import PhotoZBase
 
-# filterloc = 'Users/aimalz/Photoz-tools/filters'
-# sedloc = 'Users/aimalz/Photoz-tools/seds'
-
 class PhotoZTemplateSED(PhotoZBase):
     """
     TemplateSED method
@@ -39,10 +36,6 @@ class PhotoZTemplateSED(PhotoZBase):
             return PhotoZBase()
         else:
             return None
-        #store from Boris' notebook and read in here:
-        #flux noise sigma_obs (fix this as a constant),
-        #flux-z model F_model (3D array, write out from Boris' notebook, then read in and interpolate),
-        #p(z,t) (or just give likelihood)
 
     def join_struct_arrays(self, arrays):
         newdtype = sum((a.dtype.descr for a in arrays), [])
@@ -67,10 +60,6 @@ class PhotoZTemplateSED(PhotoZBase):
         """
         print "Applying Template SED PZs"
 
-        #what specifies a PDF in Template SED method?
-        #the fluxes and noise corresponding to the bands
-        #which means they need to be simulated here
-
         ztrue = arr['z']
 
         #select a template
@@ -80,41 +69,32 @@ class PhotoZTemplateSED(PhotoZBase):
         #read in f_mod files, interpolate, get values of f_mod_b
         self.z_grid = np.load(os.path.join(self.path,'z_grid.npy'))
         self.f_mod = np.load(os.path.join(self.path,'f_mod.npy'))
-        (nz,nt,nb) = np.shape(self.f_mod)
+        (self.nz,self.nt,self.nb) = np.shape(self.f_mod)
         ngals = len(ztrue)
 
-        f_mod_o = np.zeros((nb, ngals))
+        f_mod_o = np.zeros((self.nb, ngals))
         for z in range(ngals):
-            templateno = np.random.choice(range(nt))
-            print(templateno)
-            for b in range(nb):
+            #currently templates are randomly chosen but probably should be an input with true z
+            templateno = np.random.choice(range(self.nt))
+            for b in range(self.nb):
                 spl = InterpolatedUnivariateSpline(self.z_grid, self.f_mod[:,templateno,b])
                 f_mod_o[b][z] = spl(ztrue[z])
 
-        #select sigma_b - 1% for now
-        self.sigma = 0.01*f_mod_o
+        #select sigma_b - 10% for now
+        self.sigma = 0.1*f_mod_o
 
         #select observed fluxes f_obs_b = f_mod_b + sigma_b*rando
-        self.f_obs = np.zeros((nb, ngals))
-        for n in xrange(len(ztrue)):
-            for b in range(nb):
+        self.f_obs = np.zeros((self.nb, ngals))
+        for n in range(ngals):
+            for b in range(self.nb):
                 self.f_obs[b][n] = f_mod_o[b][n] + self.sigma[b][n] * np.random.normal()
 
         #eventually want this to be meaningful output
         return self.f_obs.T,self.sigma.T
 
     def scalefree_flux_likelihood(self, f_obs, f_obs_var, f_mod):
-        f_obs = f_obs/np.mean(f_obs)# nb
-        f_obs_var = f_obs_var/np.mean(f_obs_var)# nb
-        f_mod = f_mod/np.mean(f_mod)# nz * nt * nb
-
-#         lf_obs = np.log(f_obs)
-#         lf_obs_var = np.log(f_obs_var)
-#         lf_mod = np.log(f_mod)
 
         var = f_obs_var  # nz * nt * nb
-            #how is this the shape?
-            #f_obs_var doesn't know the template, but how can this work if it's wrong?
         invvar = np.where(f_obs/var < 1e-6, 0.0, var**-1.0)  # not nz * nt * nb
         FOT = np.sum(f_mod * f_obs * invvar, axis=2)  # nz * nt
         FTT = np.sum(f_mod**2 * invvar, axis=2)  # nz * nt
@@ -125,59 +105,34 @@ class PhotoZTemplateSED(PhotoZBase):
 
     def getpdf(self,f_obs,sigma,z,dz):
 
-        ff_obs = (10.**(-.4*f_obs))
-        f_obs_err = (10.**(.4*np.abs(sigma))-1.)*ff_obs
-
-        self.z_grid = np.load(os.path.join(self.path,'z_grid.npy'))
-        self.f_mod = np.load(os.path.join(self.path,'f_mod.npy'))
-        (nzc,nt,nb) = np.shape(self.f_mod)
+        ff_obs = f_obs
+        f_obs_err = sigma
 
         dzdz = dz/10.
 
         zrange = np.arange(max(0.,z-dz/2.),min(z+dz/2.,1.4)+dzdz,dzdz)
-        nzf = len(zrange)
+        self.nzf = len(zrange)
 
-#         summed_t = 0.
-#         for t in range(self.nt):
-#             prod_b = 1.
-#             for b in range(self.nb):
-#                 summed_z = 0.
-#                 spl = InterpolatedUnivariateSpline(self.z_mod, self.f_mod[t][b])
-#                 for z in range(self.nz):
-#                     summed_z += spl(zrange[z])
-#                 prod_b *= summed_z
-#             summed_t += prod_b
-
-        f_mod_fine = np.zeros((nzf,nt,nb))
-        for t in range(nt):
-            for b in range(nb):
+        f_mod_fine = np.zeros((self.nzf,self.nt,self.nb))
+        for t in range(self.nt):
+            for b in range(self.nb):
                 spl = InterpolatedUnivariateSpline(self.z_grid, self.f_mod[:,t,b])
-                for z in range(nzf):
+                for z in range(self.nzf):
                     f_mod_fine[z,t,b] = spl(zrange[z])
 
         #flat prior i.e. likelihood not posterior
         like = self.scalefree_flux_likelihood(ff_obs, f_obs_err**2, f_mod_fine)
         #p(z|F)=sum_t[p(F|z,t)p(z,t)]=sum_t[prod_b[N(F_obs_band,F_model_band,sigma_obs_band)]p(z,t)]
-        loglike = np.log(like)
-        loglike_t = loglike.sum(axis=1)#this could be what's wrong, trying to sum over type
-        like_t = np.exp(loglike_t)
-        out = (like_t*(max(zrange)-min(zrange))).sum(axis=0)#then sum over redshift and normalize
-        return out
+        return like.sum()
 
     def PofZ(self,arr,z,dz):
         """ Returns probability of PZ be at z +-dz/2"""
 
+        self.z_grid = np.load(os.path.join(self.path,'z_grid.npy'))
+        self.f_mod = np.load(os.path.join(self.path,'f_mod.npy'))
+        (self.nzc,self.nt,self.nb) = np.shape(self.f_mod)
+
         self.dz = dz
-#         results=np.zeros((arr.size))
-#         pdfs = self.getpdf(z,dz)
-#         mask = pdfs.sum(axis=1)!=0
-#         xarrs = arr[mask]['z'][:,np.newaxis] + self.dz
-#         masked_pdf = np.where(np.abs(xarrs-z)<dz/2., pdfs[mask], 0.)
-#         results[mask] = np.sum(masked_pdf, axis=1)
-        #N = len(arr)
-        #P = np.zeros(N)
-        #dzo2 = dz/2
-        #P[np.where(abs(arr["z"]-z)<dzo2)] = self.getpdf(z,dz)
         f_obs,sigma = arr
         self.ngals = len(sigma)
 
