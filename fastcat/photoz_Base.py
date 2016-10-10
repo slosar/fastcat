@@ -14,8 +14,17 @@ class PhotoZBase(object):
     Base object corresponds to perfectly known PZ.
 
     """
+
+    typestr="base"
+    
+    @staticmethod
+    def registerOptions(parser):
+        ## no options to register
+        pass
+
     def __init__(self):
         self.type="base"
+
 
     def writeH5 (self,dataset):
         dataset.attrs['type']=self.type
@@ -25,7 +34,7 @@ class PhotoZBase(object):
         """ Tries to read from H5.
             If not matched, return None
         """
-        if dataset.attrs['type']=="base":
+        if dataset.attrs['type']==PhotoZBase.typestr:
             return PhotoZBase()
         else:
             return None

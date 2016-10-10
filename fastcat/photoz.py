@@ -24,12 +24,14 @@ def readPhotoZH5(dataset):
     if toret is not None: return toret
     toret=PhotoZHist.readH5(dataset)
     if toret is not None: return toret
+    toret=PhotoZTemplateSED.readH5(dataset)
+    if toret is not None: return toret
     print "Unknown PZ type!"
     stop()
 
 def registerOptions(parser):
     parser.add_option("--pz_type",dest="pztype",type="string",
-        help="photo z type [none,gauss, twopop, hiddenvar, franzona]",
+                      help="photo z type [none,gauss, twopop, hiddenvar, franzona,sed]",
                   default="gauss")
     ## commonly used, so register it globally
     parser.add_option("--pz_sigma", dest="pz_sigma", default=0.03,
@@ -49,6 +51,8 @@ def getPhotoZ(o):
         pz = PhotoZHiddenVar(options=o)
     elif o.pztype=="franzona":
         pz = PhotoZHist(options=o)
+    elif o.pztype=="sed":
+        pz = PhotoZTemplateSED(options=o)
     else:
         print "Bad PZ type:",o.pztype
         stop()

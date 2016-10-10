@@ -15,35 +15,43 @@ class PhotoZTemplateSED(PhotoZBase):
     TemplateSED method
     """
 
-    def __init__(self, infopath=None, options=None):
-        self.path = infopath
-        typestr='TemplateSED'
+    typestr='TemplateSED'
+
+    @staticmethod
+    def registerOptions(parser):
+        parser.add_option("--pz_sedpath", dest="sedpath",
+                          default="TemplateSED",
+                          help="PZ:path to SED files", type="string")
+
+    def __init__(self, filepath=None, options=None):
+        ## load something
+        if (options is None):
+            if os.environ.has_key('DESC_LSS_ROOT'):
+                filepath=filepath.replace("/project/projectdirs/lsst/LSSWG",os.environ['DESC_LSS_ROOT'])
+
         if options is not None:
-            self.sigma=options.pz_sigma
-            self.f_obs=options.pz_flux
+            if os.environ.has_key('DESC_LSS_ROOT'):
+                root=os.environ['DESC_LSS_ROOT']
+            else:
+                root="/project/projectdirs/lsst/LSSWG"
+            filepath=root+"/"+options.sedpath
+
+        self.z_grid = np.load(os.path.join(filepath,'z_grid.npy'))
+        self.f_mod = np.load(os.path.join(filepath,'f_mod.npy'))
+        (self.nzc,self.nt,self.nb) = np.shape(self.f_mod)
 
     def writeH5 (self,dataset):
         dataset.attrs['type']=self.type
-        dataset.attrs['sigma']=self.sigma
-        dataset.attrs['flux']=self.f_obs
-
+        
     @staticmethod
     def readH5 (dataset):
         """ Tries to read from H5.
             If not matched, return None
         """
-        if dataset.attrs['type']=="base":
-            return PhotoZBase()
+        if dataset.attrs['type']==PhotoZTemplateSED.typestr:
+            return PhotoZTemplateSED()
         else:
             return None
-
-    def join_struct_arrays(self, arrays):
-        newdtype = sum((a.dtype.descr for a in arrays), [])
-        newrecarray = np.empty(len(arrays[0]), dtype = newdtype)
-        for a in arrays:
-            for name in a.dtype.names:
-                newrecarray[name] = a[name]
-        return newrecarray
 
     def applyPhotoZ (self,arr):
         """ This function takes the catalog array containing
@@ -67,9 +75,6 @@ class PhotoZTemplateSED(PhotoZBase):
         templates = templates +['Im_B2004a.sed','SB3_B2004a.sed','SB2_B2004a.sed','ssp_25Myr_z008.sed','ssp_5Myr_z008.sed']
 
         #read in f_mod files, interpolate, get values of f_mod_b
-        self.z_grid = np.load(os.path.join(self.path,'z_grid.npy'))
-        self.f_mod = np.load(os.path.join(self.path,'f_mod.npy'))
-        (self.nz,self.nt,self.nb) = np.shape(self.f_mod)
         ngals = len(ztrue)
 
         f_mod_o = np.zeros((self.nb, ngals))
@@ -81,16 +86,15 @@ class PhotoZTemplateSED(PhotoZBase):
                 f_mod_o[b][z] = spl(ztrue[z])
 
         #select sigma_b - 10% for now
-        self.sigma = 0.1*f_mod_o
-
+        sigma = 0.1*f_mod_o
         #select observed fluxes f_obs_b = f_mod_b + sigma_b*rando
-        self.f_obs = np.zeros((self.nb, ngals))
-        for n in range(ngals):
-            for b in range(self.nb):
-                self.f_obs[b][n] = f_mod_o[b][n] + self.sigma[b][n] * np.random.normal()
-
-        #eventually want this to be meaningful output
-        return self.f_obs.T,self.sigma.T
+        f_obs = f_mod_o+ sigma * (np.random.normal(0.,1.,self.nb*ngals).reshape((self.nb,ngals)))
+        # I don't seem to be able to find a more efficient way
+        arrx=np.zeros(ngals,dtype=[('pz_f_obs',float,(self.nb,)),('pz_flux_sigma',float,(self.nb,))])
+        arrx['pz_f_obs']=f_obs.T
+        arrx['pz_flux_sigma']=sigma.T
+        arr = recfunctions.merge_arrays((arr,arrx),flatten=True,usemask=False)
+        return arr
 
     def scalefree_flux_likelihood(self, f_obs, f_obs_var, f_mod):
 
@@ -128,13 +132,9 @@ class PhotoZTemplateSED(PhotoZBase):
     def PofZ(self,arr,z,dz):
         """ Returns probability of PZ be at z +-dz/2"""
 
-        self.z_grid = np.load(os.path.join(self.path,'z_grid.npy'))
-        self.f_mod = np.load(os.path.join(self.path,'f_mod.npy'))
-        (self.nzc,self.nt,self.nb) = np.shape(self.f_mod)
-
         self.dz = dz
-        f_obs,sigma = arr
-        self.ngals = len(sigma)
+        f_obs,sigma = arr["pz_f_obs"], arr["pz_flux_sigma"]
+        self.ngals = len(arr)
 
         pofz = np.zeros(self.ngals)
         for n in range(self.ngals):
@@ -177,6 +177,5 @@ class PhotoZTemplateSED(PhotoZBase):
         return arr["z"], arr["z"]
 
     def NameString(self):
-        # not actually sure what this even does
-        return "TrueZ"
+        return "TemplateSED"
 
