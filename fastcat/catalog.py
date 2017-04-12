@@ -75,19 +75,44 @@ class Catalog(object):
             self.data=recfunctions.append_fields(self.data,'sigma_pz',(1+self.data["z"])*self.photoz.sigma,
                                                  usemask=False)
 
-    def writeH5(self, fname):
+    def writeH5(self, fname, MPIComm=None):
         """ 
         Write Catalog to H5 file, specified as argument
         """
-        of=h5py.File(fname, "w")
+        use_mpi = (MPIComm is not None)
+        if (use_mpi):
+            of=h5py.File(fname, "w",driver='mpio', comm=MPIComm)
+        else:
+            of=h5py.File(fname, "w")
+
         if (self.meta):
             meta=of.create_dataset("meta",data=[])
             for v in self.meta.keys():
                 meta.attrs[v]=self.meta[v]
             meta.attrs['version']=self.version
-            
-        dset=of.create_dataset("objects", data=self.data, chunks=True,
+
+        if use_mpi:
+            ## we need get sizes
+            ## alltoall doesn't seem to work
+            sizes=[]
+            for i in range(MPIComm.Get_size()):
+                sizes.append(MPIComm.bcast(len(self.data),root=i))
+            sizes=np.array(sizes)
+            ofs=np.cumsum(sizes)
+            rank=MPIComm.Get_rank()
+            dset=of.create_dataset("objects", (sizes.sum(),), self.data.dtype, chunks=True,
                                shuffle=True,compression="gzip", compression_opts=9)
+
+            if (rank==0):
+                print (sizes,ofs)
+            #print (rank,ofs[rank],ofs[rank]+sizes[rank],'XX')
+            dset[ofs[rank]:ofs[rank]+sizes[rank]]=self.data
+
+        else:
+            dset=of.create_dataset("objects", data=self.data, chunks=True,
+                               shuffle=True,compression="gzip", compression_opts=9)
+
+
         if type(self.dNdz)!=type(None):
             dset=of.create_dataset("dNdz", data=self.dNdz)
         if type(self.bz)!=type(None):
