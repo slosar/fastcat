@@ -100,14 +100,8 @@ class Catalog(object):
             sizes=np.array(sizes)
             ofs=np.cumsum(sizes)
             rank=MPIComm.Get_rank()
-            dset=of.create_dataset("objects", (sizes.sum(),), self.data.dtype, chunks=True,
-                               shuffle=True,compression="gzip", compression_opts=9)
-
-            if (rank==0):
-                print (sizes,ofs)
-            #print (rank,ofs[rank],ofs[rank]+sizes[rank],'XX')
+            dset=of.create_dataset("objects", (sizes.sum(),), self.data.dtype)
             dset[ofs[rank]:ofs[rank]+sizes[rank]]=self.data
-
         else:
             dset=of.create_dataset("objects", data=self.data, chunks=True,
                                shuffle=True,compression="gzip", compression_opts=9)
