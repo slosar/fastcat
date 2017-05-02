@@ -80,17 +80,7 @@ class Catalog(object):
         Write Catalog to H5 file, specified as argument
         """
         use_mpi = (MPIComm is not None)
-        if (use_mpi):
-            of=h5py.File(fname, "w",driver='mpio', comm=MPIComm)
-        else:
-            of=h5py.File(fname, "w")
-
-        if (self.meta):
-            meta=of.create_dataset("meta",data=[])
-            for v in self.meta.keys():
-                meta.attrs[v]=self.meta[v]
-            meta.attrs['version']=self.version
-
+        ## dataset writing is parallel or not.
         if use_mpi:
             ## we need get sizes
             ## alltoall doesn't seem to work
@@ -98,22 +88,40 @@ class Catalog(object):
             for i in range(MPIComm.Get_size()):
                 sizes.append(MPIComm.bcast(len(self.data),root=i))
             sizes=np.array(sizes)
-            ofs=np.cumsum(sizes)
+            totsize=sizes.sum()
+            ofs=np.cumsum(sizes)-sizes ## yes, first one should be zero
             rank=MPIComm.Get_rank()
-            dset=of.create_dataset("objects", (sizes.sum(),), self.data.dtype)
-            dset[ofs[rank]:ofs[rank]+sizes[rank]]=self.data
+            of=h5py.File(fname, "w",driver='mpio', comm=MPIComm)
+            dset=of.create_dataset("objects", (totsize,), self.data.dtype)
+            with dset.collective:
+                dset[ofs[rank]:ofs[rank]+sizes[rank]]=self.data
+            of.close()
+            MPIComm.barrier()
+            if rank==0: ## now only rank0 opens to add info
+                of=h5py.File(fname,'r+')
         else:
+            rank=0
+            of=h5py.File(fname, "w")
             dset=of.create_dataset("objects", data=self.data, chunks=True,
-                               shuffle=True,compression="gzip", compression_opts=9)
+                    shuffle=True,compression="gzip", compression_opts=9)
+            of.close()
+        ## this is now added just by root
+        if (rank==0):
+            if (self.meta):
+                meta=of.create_dataset("meta",data=[])
+                for v in self.meta.keys():
+                    meta.attrs[v]=self.meta[v]
+                meta.attrs['version']=self.version
 
-
-        if type(self.dNdz)!=type(None):
-            dset=of.create_dataset("dNdz", data=self.dNdz)
-        if type(self.bz)!=type(None):
-            dset=of.create_dataset("bz", data=self.bz)
-        self.window.writeH5(of)
-        pz=of.create_dataset("photoz",data=[])
-        self.photoz.writeH5(pz)
+            if type(self.dNdz)!=type(None):
+                dset=of.create_dataset("dNdz", data=self.dNdz)
+            if type(self.bz)!=type(None):
+                dset=of.create_dataset("bz", data=self.bz)
+            self.window.writeH5(of)
+            pz=of.create_dataset("photoz",data=[])
+            self.photoz.writeH5(pz)
+            of.close()
+        return
 
     def setWindow(self,window,apply_to_data=True):
         """ 
@@ -147,7 +155,7 @@ class Catalog(object):
             if n in newdata.dtype.names:
                 newdata[n][N1:]=addcat.data[n]
             else:
-                print("Warning: not adding ",a," in catalog.appendCatalog")
+                print("Warning: not adding ",n," in catalog.appendCatalog")
         self.data=newdata
 
 
