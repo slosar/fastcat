@@ -104,7 +104,6 @@ class Catalog(object):
             of=h5py.File(fname, "w")
             dset=of.create_dataset("objects", data=self.data, chunks=True,
                     shuffle=True,compression="gzip", compression_opts=9)
-            of.close()
         ## this is now added just by root
         if (rank==0):
             if (self.meta):
@@ -121,6 +120,8 @@ class Catalog(object):
             pz=of.create_dataset("photoz",data=[])
             self.photoz.writeH5(pz)
             of.close()
+        if (rank==0): print("Succesfully created %s."%fname)
+
         return
 
     def setWindow(self,window,apply_to_data=True):
