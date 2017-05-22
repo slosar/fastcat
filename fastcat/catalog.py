@@ -4,6 +4,7 @@ import window
 import photoz
 import numpy as np
 import astropy.units as u
+import os
 from numpy.lib import recfunctions
 
 try:
@@ -11,6 +12,16 @@ try:
 except:
     print ("Cannot import h5py, if you try to write to h5 it won't work")
 
+
+def getNumCatalogParts(fname):
+    of=h5py.File(fname, "r")
+    if of.has_key('parted_file'):
+        _,Npart=tuple(of['parted_file'].value)
+    else:
+        Npart=1
+    of.close()
+    return Npart
+    
 class Catalog(object):
     """ 
     Basic object to hold a catalog of observed astronomical objects.
@@ -35,6 +46,8 @@ class Catalog(object):
                   photoz=None,meta=None, read_from=None):
         if (read_from!=None):
             self.readH5(read_from)
+            self.filename=read_from
+
         else:
             self.data=np.zeros(N,dtype=map(lambda x:(x,np.float32),fields))
             self.dNdz=dNdz
@@ -49,6 +62,24 @@ class Catalog(object):
     def __setitem__(self, key,item):
         self.data[key]=item
 
+    def readNextPart(self, part=None):
+        """ If part is specified, read that part.
+            if not read next part.
+            Return true if successful.
+         """
+        if (part is None):
+            part=self.part+1
+        if (part>=self.Npart):
+            return False
+        of=h5py.File(self.parted_fname(self.filename,part), "r")
+        self.data=of["objects"].value
+        self.part, self.Npart=tuple(of['parted_file'].value)
+        of.close()
+        return True
+    
+    def rewind(self):
+        self.readNextPart(0)
+        
     def readH5(self, fname):
         """ 
         Reads Catalog from H5 file, specified as argument
@@ -56,6 +87,11 @@ class Catalog(object):
         of=h5py.File(fname, "r")
         self.data=of["objects"].value
         self.meta=of["meta"].attrs
+        if "parted_file" in of.keys():
+            self.part, self.Npart=tuple(of['parted_file'].value)
+        else:
+            self.part, self.Npart=0,1
+            
         if "dNdz" in of.keys():
             self.dNdz=of['dNdz'].value 
         if "bz" in of.keys():
@@ -74,12 +110,28 @@ class Catalog(object):
             print("WARNING: upgrading from 0.2 to 0.3, photozs internally slightly inconsistent.")
             self.data=recfunctions.append_fields(self.data,'sigma_pz',(1+self.data["z"])*self.photoz.sigma,
                                                  usemask=False)
+        of.close()
+        
+    def parted_fname(self,fname,cpart):
+        if (cpart==0):
+            return fname
+        fname, ext = os.path.splitext(fname)
+        fname+=".part"+str(cpart)+ext
+        return fname
 
-    def writeH5(self, fname, MPIComm=None):
+    def writeH5(self, fname, MPIComm=None, part=None):
         """ 
-        Write Catalog to H5 file, specified as argument
+        Write Catalog to H5 file, specified as argument.
+        if MPIComm is given, it will try to do parallel hdf write.
+        If part is specified, it should be in the form of tuple (part,nparts). It will
+        manipulate name automatically.
         """
         use_mpi = (MPIComm is not None)
+        if (use_mpi and part is not None):
+            print ("Cannot do both MPI and parts!")
+            stop()
+        if (part is not None):
+            cpart, npart=part
         ## dataset writing is parallel or not.
         if use_mpi:
             ## we need get sizes
@@ -101,9 +153,15 @@ class Catalog(object):
                 of=h5py.File(fname,'r+')
         else:
             rank=0
+            if (part is not None):
+                if cpart>0:
+                    fname=self.parted_fname(fname,cpart)
+                rank=cpart
             of=h5py.File(fname, "w")
             dset=of.create_dataset("objects", data=self.data, chunks=True,
                     shuffle=True,compression="gzip", compression_opts=9)
+            if (part is not None):
+                of.create_dataset("parted_file",data=part)
         ## this is now added just by root
         if (rank==0):
             if (self.meta):
@@ -119,7 +177,7 @@ class Catalog(object):
             self.window.writeH5(of)
             pz=of.create_dataset("photoz",data=[])
             self.photoz.writeH5(pz)
-            of.close()
+        of.close()
         if (rank==0): print("Succesfully created %s."%fname)
 
         return
