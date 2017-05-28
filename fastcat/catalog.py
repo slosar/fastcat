@@ -71,10 +71,11 @@ class Catalog(object):
             part=self.part+1
         if (part>=self.Npart):
             return False
-        of=h5py.File(self.parted_fname(self.filename,part), "r")
-        self.data=of["objects"].value
-        self.part, self.Npart=tuple(of['parted_file'].value)
-        of.close()
+        if (self.part!=part):
+            of=h5py.File(self.parted_fname(self.filename,part), "r")
+            self.data=of["objects"].value
+            self.part, self.Npart=tuple(of['parted_file'].value)
+            of.close()
         return True
     
     def rewind(self):
