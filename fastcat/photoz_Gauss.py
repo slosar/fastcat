@@ -62,6 +62,24 @@ class PhotoZGauss(PhotoZBase):
         norm=1./np.sqrt(2*np.pi)/arr["sigma_pz"]
         return np.exp(-(arr["z"]-z)**2/(2*arr["sigma_pz"]**2))*norm*dz
 
+
+    def NofZ(self,arr,zmin,zmax,dz):
+        N=(zmax-zmin)/self.sigma*5
+        H,zh,sh=np.histogram2d(arr["z"],arr["sigma_pz"],N)
+        ## bin centrers
+        zh=0.5*(zh[:-1]+zh[1:])
+        sh=0.5*(sh[:-1]+sh[1:])
+        zarr=np.arange(zmin,zmax,dz)
+        Nz=np.zeros(len(zarr))
+        for i,zc in enumerate(zh):
+            for j,sig in enumerate(sh):
+                if H[i,j]>0:
+                    norm=1./np.sqrt(2*np.pi)/sig
+                    Nz+=H[i,j]*np.exp(-(zc-zarr)**2/(2*sig**2))*norm*dz
+        return zarr,Nz
+        
+            
+
     def cPofZ(self,arr,zx):
         """ Returns cumulative probability of PZ be at z<zx"""
         sigs=(zx-arr["z"])/arr["sigma_pz"]
