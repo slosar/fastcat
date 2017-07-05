@@ -43,12 +43,13 @@ class Catalog(object):
     version=0.3
     
     def __init__ (self, N=0, fields=['ra','dec','z'],dNdz=None, bz=None,window=window.WindowBase(),
-                  photoz=None,meta=None, read_from=None):
+                  photoz=None,meta=None, addFields=[], read_from=None):
         if (read_from!=None):
             self.readH5(read_from)
             self.filename=read_from
 
         else:
+            fields+=addFields
             self.data=np.zeros(N,dtype=map(lambda x:(x,np.float32),fields))
             self.dNdz=dNdz
             self.bz=bz

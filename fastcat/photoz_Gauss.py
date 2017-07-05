@@ -13,7 +13,31 @@ class PhotoZGauss(PhotoZBase):
     """
     typestr='gauss'
     
-    def __init__(self,sigma=None,options=None):
+    def __init__(self,sigma=None,options=None,cat=None, zcent=None):
+        """On input, if sigma is a number, it is interpreted as sigma=sigma_input*(1+z).
+         in stuff like applyPhotoZ.  
+         If cat and zcent are specified, then then neccessary fields are generated in catalog
+         In that case at least arr must be specified."""
+        if (cat is not None):
+            if zcent is not None:
+                if 'z' not in cat.data.dtype.names:
+                    cat.data=recfunctions.append_fields(cat.data,'z',zcent, usemask=False)
+                else:
+                    cat.data['z']=zcent
+            if type(sigma)==float:
+                sigmar=sigma*(cat.data['z']+1)
+            else:
+                sigmar=sigma
+                sigma=(sigma/(1+cat.data['z'])).mean()
+                sigma=int(sigma*1000)/1000. ## make a nice number to output
+            if 'sigma_pz' not in cat.data.dtype.names:
+                cat.data=recfunctions.append_fields(cat.data,'sigma_pz',sigmar, usemask=False)
+            else:
+                cat.data['sigma_pz']=sigmar
+        #now sigma should be a number
+        if type(sigma)==type(np.ndarray):
+            raise NotImplemented
+
         if options is not None:
             sigma=options.pz_sigma
         self.sigma=sigma
