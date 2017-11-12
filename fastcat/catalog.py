@@ -50,6 +50,7 @@ class Catalog(object):
 
         else:
             fields+=addFields
+            fields=np.unique(fields).tolist()
             self.data=np.zeros(N,dtype=map(lambda x:(x,np.float32),fields))
             self.dNdz=dNdz
             self.bz=bz
