@@ -100,7 +100,9 @@ class PhotoZBase(object):
         for i,z in enumerate(zarr):
             Nz[i]=(self.PofZ(arr,z,dz)).sum()
         return zarr,Nz
-
+    def NofZ_true(self,arr,zmin,zmax,dz):
+        Nz, binedges = np.histogram(arr["z_true"],range=(zmin,zmax),bins=int((zmax-zmin)/dz))
+        return 0.5*(binedges[1:]+binedges[:-1]),Nz
     def NameString(self):
         return "TrueZ"
     
